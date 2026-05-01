@@ -23,11 +23,12 @@ async function executeQuery(query, params = []) {
     return await request.query(query);
 }
 
-// For stored procedures
+// FOR STORED PROCEDURES - ADD THIS
 async function executeProcedure(procedureName, params = {}) {
     const db = await getDb();
     const request = db.request();
     
+    // Add all parameters
     Object.keys(params).forEach(key => {
         request.input(key, params[key]);
     });
