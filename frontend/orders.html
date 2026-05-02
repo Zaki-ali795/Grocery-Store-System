@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshMart | My Orders</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f4f6f3;
+            color: #1e2a1c;
+        }
+
+        /* ── Navbar ── */
+        .navbar {
+            background: #2c6e2f;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 1.4rem;
+            text-decoration: none;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: background 0.2s;
+            text-decoration: none;
+        }
+
+        .nav-btn:hover { background: rgba(255,255,255,0.25); }
+        .nav-user { color: white; font-size: 0.85rem; opacity: 0.9; }
+
+        /* ── Page ── */
+        .page {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .page-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+
+        /* ── Order card ── */
+        .order-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 1rem;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+
+        .order-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+
+        .order-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+
+        .order-id {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .order-date {
+            font-size: 0.82rem;
+            color: #6c757d;
+            margin-top: 0.1rem;
+        }
+
+        .order-status {
+            padding: 0.3rem 0.9rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .status-pending    { background: #fff3cd; color: #856404; }
+        .status-confirmed  { background: #d1ecf1; color: #0c5460; }
+        .status-shipped    { background: #cce5ff; color: #004085; }
+        .status-delivered  { background: #d4edda; color: #155724; }
+        .status-cancelled  { background: #f8d7da; color: #721c24; }
+
+        .order-body {
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .order-meta { font-size: 0.88rem; color: #4a5b46; }
+        .order-meta span { margin-right: 1.2rem; }
+        .order-meta i { margin-right: 0.3rem; color: #2c6e2f; }
+
+        .order-total {
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: #2c6e2f;
+        }
+
+        .order-actions {
+            display: flex;
+            gap: 0.6rem;
+        }
+
+        .action-btn {
+            background: none;
+            border: 1px solid #2c6e2f;
+            color: #2c6e2f;
+            padding: 0.4rem 0.9rem;
+            border-radius: 2rem;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .action-btn:hover { background: #2c6e2f; color: white; }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-overlay.open { display: flex; }
+
+        .modal {
+            background: white;
+            border-radius: 1.2rem;
+            width: 100%;
+            max-width: 560px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+            position: sticky;
+            top: 0;
+            background: white;
+        }
+
+        .modal-header h3 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 0.2rem;
+        }
+
+        .modal-close:hover { color: #e74c3c; }
+
+        .modal-body { padding: 1.2rem 1.5rem; }
+
+        /* Track steps */
+        .track-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            margin: 1rem 0 1.5rem;
+        }
+
+        .track-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            position: relative;
+        }
+
+        .track-step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 14px;
+            top: 30px;
+            width: 2px;
+            height: 32px;
+            background: #e0e0e0;
+        }
+
+        .track-step.done::after { background: #2c6e2f; }
+
+        .step-dot {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid #e0e0e0;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: #ccc;
+            flex-shrink: 0;
+            margin-bottom: 2rem;
+        }
+
+        .track-step.done .step-dot {
+            background: #2c6e2f;
+            border-color: #2c6e2f;
+            color: white;
+        }
+
+        .track-step.current .step-dot {
+            border-color: #2c6e2f;
+            color: #2c6e2f;
+        }
+
+        .step-label {
+            font-size: 0.88rem;
+            font-weight: 500;
+            padding-top: 0.3rem;
+        }
+
+        /* Order items in modal */
+        .modal-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.7rem 0;
+            border-bottom: 1px solid #f8f8f8;
+            font-size: 0.88rem;
+        }
+
+        .modal-item:last-child { border-bottom: none; }
+
+        .modal-item-name { font-weight: 500; }
+        .modal-item-qty { color: #6c757d; font-size: 0.82rem; }
+        .modal-item-price { font-weight: 600; color: #2c6e2f; }
+
+        .modal-total {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 700;
+            font-size: 1rem;
+            padding-top: 0.8rem;
+            border-top: 2px solid #f0f0f0;
+            margin-top: 0.5rem;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 1rem;
+            color: #6c757d;
+        }
+
+        .empty-state i { font-size: 3rem; opacity: 0.3; margin-bottom: 1rem; }
+        .empty-state p { margin-bottom: 1.5rem; }
+
+        .shop-btn {
+            background: #2c6e2f;
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 2rem;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .shop-btn:hover { background: #1f5622; }
+
+        /* Skeleton */
+        .skel {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 0.4rem;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Toast */
+        .toast-message {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 42, 28, 0.95);
+            color: white;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 1000;
+            pointer-events: none;
+            animation: fadeUp 0.2s ease;
+        }
+
+        .toast-message.error { background: rgba(180, 50, 35, 0.95); }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <a class="nav-logo" href="customer-dashboard.html">
+        <i class="fas fa-leaf"></i> FreshMart
+    </a>
+    <div class="nav-actions">
+        <span class="nav-user"><i class="fas fa-user"></i> <span id="user-name">...</span></span>
+        <a href="customer-dashboard.html" class="nav-btn">
+            <i class="fas fa-store"></i> Shop
+        </a>
+        <a href="cart.html" class="nav-btn">
+            <i class="fas fa-shopping-cart"></i> Cart
+        </a>
+        <button class="nav-btn" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+    </div>
+</nav>
+
+<!-- Page -->
+<div class="page">
+    <div class="page-title"><i class="fas fa-box" style="color:#2c6e2f;margin-right:0.5rem"></i>My Orders</div>
+    <div id="orders-list">
+        <!-- Skeleton -->
+        <div class="order-card" style="padding:1.2rem 1.5rem">
+            <div class="skel" style="height:16px;width:40%;margin-bottom:10px"></div>
+            <div class="skel" style="height:12px;width:25%"></div>
+        </div>
+        <div class="order-card" style="padding:1.2rem 1.5rem">
+            <div class="skel" style="height:16px;width:35%;margin-bottom:10px"></div>
+            <div class="skel" style="height:12px;width:20%"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Order Details Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+    <div class="modal" id="modal">
+        <div class="modal-header">
+            <h3 id="modal-title">Order Details</h3>
+            <button class="modal-close" onclick="closeModalDirect()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body" id="modal-body">
+            Loading...
+        </div>
+    </div>
+</div>
+
+<script src="orders.js"></script>
+</body>
+</html>
