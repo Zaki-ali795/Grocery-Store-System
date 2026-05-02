@@ -70,7 +70,6 @@ const authController = {
         }
     },
 
-    // ✅ UPDATED LOGIN - Now using sp_LogIn procedure
     async login(req, res) {
         try {
             const { email, password, role } = req.body;
@@ -82,25 +81,14 @@ const authController = {
                 });
             }
 
-            // ✅ USING YOUR sp_LogIn PROCEDURE
-            let result;
-            try {
-                result = await executeProcedure('sp_LogIn', {
-                    email: email
-                });
-            } catch (procError) {
-                // Handle error raised by procedure
-                if (procError.message.includes('Email not found')) {
-                    return res.status(401).json({
-                        success: false,
-                        error: 'Invalid email or password'
-                    });
-                }
-                throw procError;
-            }
+            const result = await executeQuery(
+                `SELECT UserID, name, email, password_hash, role, admin_approved 
+                 FROM Users 
+                 WHERE email = @email`,
+                [{ name: 'email', value: email }]
+            );
 
-            // Check if user was found
-            if (!result.recordset || result.recordset.length === 0) {
+            if (result.recordset.length === 0) {
                 return res.status(401).json({
                     success: false,
                     error: 'Invalid email or password'
@@ -109,7 +97,6 @@ const authController = {
 
             const user = result.recordset[0];
 
-            // ✅ Compare password using bcrypt (Node.js handles this)
             const isValidPassword = await bcrypt.compare(password, user.password_hash);
             if (!isValidPassword) {
                 return res.status(401).json({
@@ -118,25 +105,14 @@ const authController = {
                 });
             }
 
-            // Check admin approval if trying to login as admin
-            if (role === 'admin') {
-                // You need admin_approved column in Users table
-                // If you don't have it, check role === 'admin' directly
-                const adminCheck = await executeQuery(
-                    `SELECT admin_approved FROM Users WHERE UserID = @userId`,
-                    [{ name: 'userId', value: user.UserID, type: sql.Int }]
-                );
-                
-                if (!adminCheck.recordset[0]?.admin_approved) {
-                    return res.status(403).json({
-                        success: false,
-                        error: 'Not authorized as admin. Please request admin access first.'
-                    });
-                }
-                user.role = 'admin'; // Set role for token
+            if (role === 'admin' && user.admin_approved !== 1) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'Not authorized as admin.'
+                });
             }
 
-            const tokenRole = (role === 'admin') ? 'admin' : 'customer';
+            const tokenRole = (role === 'admin' && user.admin_approved === 1) ? 'admin' : 'customer';
             const token = jwt.sign(
                 {
                     userId: user.UserID,
@@ -158,10 +134,8 @@ const authController = {
                     id: user.UserID,
                     name: user.name,
                     email: user.email,
-                    phone: user.phone_no,
-                    address: user.Address,
-                    city: user.City,
-                    role: tokenRole
+                    role: tokenRole,
+                    isAdmin: user.admin_approved === 1
                 }
             });
 
