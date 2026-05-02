@@ -85,17 +85,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (regPassword) {
         regPassword.addEventListener('input', function() {
             const strength = checkPasswordStrength(this.value);
-            let strengthText = '';
             let strengthClass = '';
             
             if (strength === 0 || strength === 1) {
-                strengthText = 'Weak';
                 strengthClass = 'weak';
             } else if (strength === 2 || strength === 3) {
-                strengthText = 'Medium';
                 strengthClass = 'medium';
             } else if (strength >= 4) {
-                strengthText = 'Strong';
                 strengthClass = 'strong';
             }
             
@@ -114,12 +110,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // ----- REGISTRATION FORM HANDLER (Matches your DB schema) -----
+    // ----- REGISTRATION FORM HANDLER -----
     if (registerForm) {
         registerForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Get form values
             const name = document.getElementById('reg-name').value.trim();
             const email = document.getElementById('reg-email').value.trim();
             const password = document.getElementById('reg-password').value;
@@ -156,49 +151,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Prepare payload matching your Users table schema
-            const registrationData = {
-                name: name,
-                email: email,
-                password: password, // Will be hashed on backend
-                phone_no: phone || null,
-                address: address || null,
-                city: city,
-                role: role,
-                created_at: new Date().toISOString()
-            };
-            
-            console.log('📝 Registration Attempt:', { ...registrationData, password: '[HIDDEN]' });
             showToast('Creating your account...');
             
             try {
-                // 🔌 REPLACE WITH YOUR ACTUAL BACKEND API ENDPOINT
-                // const response = await fetch('https://your-backend.com/api/auth/register', {
-                //     method: 'POST',
-                //     headers: { 'Content-Type': 'application/json' },
-                //     body: JSON.stringify(registrationData)
-                // });
-                // const result = await response.json();
-                
-                // SIMULATED API CALL (Remove in production)
-               const response = await fetch('http://localhost:3000/api/auth/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-        name, email, password, 
-        phone_no: phone, 
-        address, city, role
-    })
-});
-const result = await response.json();
+                const response = await fetch('http://localhost:3000/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, phone_no: phone, address, city, role })
+                });
+                const result = await response.json();
                 
                 if (result.success) {
                     showToast(`✅ Welcome ${name}! Account created successfully. Please sign in.`, false, 3000);
-                    
-                    // Clear form
                     registerForm.reset();
-                    
-                    // Switch to login tab after 2 seconds
                     setTimeout(() => {
                         document.querySelector('[data-tab="login"]').click();
                         showToast('Please sign in with your new credentials', false, 3000);
@@ -210,25 +175,6 @@ const result = await response.json();
                 console.error('Registration error:', error);
                 showToast('Connection error. Please try again.', true);
             }
-        });
-    }
-    
-    // Simulated registration (Replace with real API call)
-    async function simulateRegistration(data) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                // Demo: Check if email already exists
-                const existingEmails = ['admin@freshmart.com', 'test@example.com'];
-                if (existingEmails.includes(data.email)) {
-                    resolve({ success: false, message: 'Email already registered. Please use a different email.' });
-                } else {
-                    resolve({ 
-                        success: true, 
-                        message: 'Registration successful',
-                        userId: Math.floor(Math.random() * 1000)
-                    });
-                }
-            }, 1000);
         });
     }
     
@@ -247,94 +193,81 @@ const result = await response.json();
                 return;
             }
             
-            const loginPayload = { role: 'customer', email, password, rememberMe };
-            
-            // 🔌 REPLACE WITH REAL API CALL
-            // const response = await fetch('https://your-backend.com/api/auth/login', {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify(loginPayload)
-            // });
-            
-            const response = await fetch('http://localhost:3000/api/auth/login', {
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password, role })
-                                        });
-const result = await response.json();
-            
-            if (result.success) {
-                if (rememberMe) {
-                    localStorage.setItem('freshmart_user', JSON.stringify({ email, role: 'customer' }));
+                    body: JSON.stringify({ email, password, role: 'customer' })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    const userData = JSON.stringify({
+                        email,
+                        role: 'customer',
+                        token: result.token,
+                        name: result.name || result.user?.name
+                    });
+                    if (rememberMe) {
+                        localStorage.setItem('freshmart_user', userData);
+                    } else {
+                        sessionStorage.setItem('freshmart_user', userData);
+                    }
+                    showToast(`✅ Welcome back! Redirecting...`);
+                    setTimeout(() => {
+                        window.location.href = 'customer-dashboard.html';
+                    }, 1500);
                 } else {
-                    sessionStorage.setItem('freshmart_user', JSON.stringify({ email, role: 'customer' }));
+                    showToast(result.message || 'Invalid credentials', true);
                 }
-                showToast(`✅ Welcome back! Redirecting...`);
-                setTimeout(() => {
-                    window.location.href = '/customer-dashboard.html';
-                }, 1500);
-            } else {
-                showToast(result.message || 'Invalid credentials', true);
+            } catch (error) {
+                console.error('Customer login error:', error);
+                showToast('Connection error. Please try again.', true);
             }
         });
     }
     
     // ----- ADMIN LOGIN -----
-   // ----- ADMIN LOGIN -----
-const adminLogin = document.getElementById('login-admin');
-if (adminLogin) {
-    adminLogin.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const email = document.getElementById('admin-email').value.trim();
-        const password = document.getElementById('admin-password').value;
-        const rememberMe = document.querySelector('input[name="remember_admin"]')?.checked;
-        
-        if (!email || !password) {
-            showToast('Please enter admin credentials', true);
-            return;
-        }
-        
-        try {
-            const response = await fetch('http://localhost:3000/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, role: 'admin' })
-            });
-            const result = await response.json();
+    const adminLogin = document.getElementById('login-admin');
+    if (adminLogin) {
+        adminLogin.addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            if (result.success) {
-                if (rememberMe) {
-                    localStorage.setItem('freshmart_admin', JSON.stringify({ email, role: 'admin', token: result.token }));
-                } else {
-                    sessionStorage.setItem('freshmart_admin', JSON.stringify({ email, role: 'admin', token: result.token }));
-                }
-                showToast(`🔒 Welcome Admin! Redirecting...`);
-                setTimeout(() => {
-                    window.location.href = '/admin-panel.html';
-                }, 1500);
-            } else {
-                showToast(result.error || 'Invalid admin credentials', true);
+            const email = document.getElementById('admin-email').value.trim();
+            const password = document.getElementById('admin-password').value;
+            const rememberMe = document.querySelector('input[name="remember_admin"]')?.checked;
+            
+            if (!email || !password) {
+                showToast('Please enter admin credentials', true);
+                return;
             }
-        } catch (error) {
-            console.error('Admin login error:', error);
-            showToast('Connection error. Please try again.', true);
-        }
-    });
-}
-    
-    // Simulated login (Replace with real API)
-    async function simulateLogin(payload) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                if (payload.role === 'customer' && payload.email === 'customer@freshmart.com' && payload.password === 'customer123') {
-                    resolve({ success: true, message: 'Login successful' });
-                } else if (payload.role === 'admin' && payload.email === 'admin@freshmart.com' && payload.password === 'admin123') {
-                    resolve({ success: true, message: 'Admin login successful' });
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, role: 'admin' })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    const adminData = JSON.stringify({ email, role: 'admin', token: result.token });
+                    if (rememberMe) {
+                        localStorage.setItem('freshmart_admin', adminData);
+                    } else {
+                        sessionStorage.setItem('freshmart_admin', adminData);
+                    }
+                    showToast(`🔒 Welcome Admin! Redirecting...`);
+                    setTimeout(() => {
+                        window.location.href = '/admin-panel.html';
+                    }, 1500);
                 } else {
-                    resolve({ success: false, message: 'Invalid email or password' });
+                    showToast(result.error || 'Invalid admin credentials', true);
                 }
-            }, 800);
+            } catch (error) {
+                console.error('Admin login error:', error);
+                showToast('Connection error. Please try again.', true);
+            }
         });
     }
     

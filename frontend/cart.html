@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshMart | My Cart</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f4f6f3;
+            color: #1e2a1c;
+        }
+
+        /* ── Navbar ── */
+        .navbar {
+            background: #2c6e2f;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 1.4rem;
+            text-decoration: none;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: background 0.2s;
+            text-decoration: none;
+        }
+
+        .nav-btn:hover { background: rgba(255,255,255,0.25); }
+
+        .nav-user { color: white; font-size: 0.85rem; opacity: 0.9; }
+
+        /* ── Page ── */
+        .page {
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        /* ── Cart items panel ── */
+        .cart-panel {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            overflow: hidden;
+        }
+
+        .cart-panel-header {
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .cart-panel-header h2 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .clear-btn {
+            background: none;
+            border: 1px solid #e74c3c;
+            color: #e74c3c;
+            padding: 0.3rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .clear-btn:hover { background: #e74c3c; color: white; }
+
+        /* Cart item row */
+        .cart-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #f8f8f8;
+            transition: background 0.15s;
+        }
+
+        .cart-item:hover { background: #fafafa; }
+
+        .cart-item:last-child { border-bottom: none; }
+
+        .item-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #e8f0e7, #c8e0c4);
+            border-radius: 0.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2c6e2f;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .item-info { flex: 1; min-width: 0; }
+
+        .item-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-unit {
+            font-size: 0.78rem;
+            color: #6c757d;
+            margin-top: 0.1rem;
+        }
+
+        .item-price {
+            font-weight: 600;
+            color: #2c6e2f;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+
+        /* Quantity controls */
+        .qty-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #f4f6f3;
+            border-radius: 2rem;
+            padding: 0.2rem 0.4rem;
+        }
+
+        .qty-btn {
+            background: white;
+            border: 1px solid #ddd;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            color: #2c6e2f;
+        }
+
+        .qty-btn:hover { background: #2c6e2f; color: white; border-color: #2c6e2f; }
+
+        .qty-value {
+            min-width: 24px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .remove-btn {
+            background: none;
+            border: none;
+            color: #ccc;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.3rem;
+            border-radius: 50%;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .remove-btn:hover { color: #e74c3c; background: #fef0f0; }
+
+        /* Empty state */
+        .empty-cart {
+            padding: 4rem 2rem;
+            text-align: center;
+            color: #6c757d;
+        }
+
+        .empty-cart i {
+            font-size: 3rem;
+            opacity: 0.3;
+            margin-bottom: 1rem;
+        }
+
+        .empty-cart p { margin-bottom: 1.5rem; }
+
+        .shop-btn {
+            background: #2c6e2f;
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 2rem;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.2s;
+        }
+
+        .shop-btn:hover { background: #1f5622; }
+
+        /* ── Summary panel ── */
+        .summary-panel {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            padding: 1.5rem;
+            position: sticky;
+            top: 80px;
+        }
+
+        .summary-panel h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1.2rem;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 0.8rem;
+            color: #4a5b46;
+        }
+
+        .summary-divider {
+            border: none;
+            border-top: 1px solid #f0f0f0;
+            margin: 1rem 0;
+        }
+
+        .summary-total {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #1e2a1c;
+        }
+
+        /* Delivery address input */
+        .delivery-section {
+            margin-top: 1.2rem;
+        }
+
+        .delivery-section label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #4a5b46;
+            margin-bottom: 0.4rem;
+        }
+
+        .delivery-section textarea {
+            width: 100%;
+            border: 1px solid #dde0e3;
+            border-radius: 0.8rem;
+            padding: 0.7rem 0.9rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.88rem;
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s;
+            height: 70px;
+        }
+
+        .delivery-section textarea:focus { border-color: #2c6e2f; }
+
+        .checkout-btn {
+            width: 100%;
+            background: #2c6e2f;
+            color: white;
+            border: none;
+            padding: 0.9rem;
+            border-radius: 2rem;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .checkout-btn:hover {
+            background: #1f5622;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(44,110,47,0.3);
+        }
+
+        .checkout-btn:disabled {
+            background: #aaa;
+            transform: none;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        /* Loading skeleton */
+        .skeleton-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #f8f8f8;
+        }
+
+        .skel {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 0.4rem;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Toast */
+        .toast-message {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 42, 28, 0.95);
+            color: white;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 1000;
+            pointer-events: none;
+            animation: fadeUp 0.2s ease;
+        }
+
+        .toast-message.error { background: rgba(180, 50, 35, 0.95); }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .page { grid-template-columns: 1fr; }
+            .summary-panel { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <a class="nav-logo" href="customer-dashboard.html">
+        <i class="fas fa-leaf"></i> FreshMart
+    </a>
+    <div class="nav-actions">
+        <span class="nav-user"><i class="fas fa-user"></i> <span id="user-name">...</span></span>
+        <a href="customer-dashboard.html" class="nav-btn">
+            <i class="fas fa-arrow-left"></i> Continue Shopping
+        </a>
+        <a href="orders.html" class="nav-btn">
+            <i class="fas fa-box"></i> Orders
+        </a>
+        <button class="nav-btn" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+    </div>
+</nav>
+
+<!-- Page -->
+<div class="page">
+
+    <!-- Cart items -->
+    <div class="cart-panel">
+        <div class="cart-panel-header">
+            <h2><i class="fas fa-shopping-cart" style="color:#2c6e2f;margin-right:0.5rem"></i>My Cart (<span id="item-count">0</span> items)</h2>
+            <button class="clear-btn" onclick="clearCart()">
+                <i class="fas fa-trash"></i> Clear All
+            </button>
+        </div>
+        <div id="cart-items">
+            <!-- Skeleton -->
+            <div class="skeleton-row">
+                <div class="skel" style="width:50px;height:50px;border-radius:0.6rem;flex-shrink:0"></div>
+                <div style="flex:1">
+                    <div class="skel" style="height:14px;width:60%;margin-bottom:8px"></div>
+                    <div class="skel" style="height:11px;width:30%"></div>
+                </div>
+            </div>
+            <div class="skeleton-row">
+                <div class="skel" style="width:50px;height:50px;border-radius:0.6rem;flex-shrink:0"></div>
+                <div style="flex:1">
+                    <div class="skel" style="height:14px;width:50%;margin-bottom:8px"></div>
+                    <div class="skel" style="height:11px;width:25%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-panel">
+        <h3>Order Summary</h3>
+        <div class="summary-row">
+            <span>Subtotal</span>
+            <span id="subtotal">Rs. 0</span>
+        </div>
+        <div class="summary-row">
+            <span>Tax (0%)</span>
+            <span>Rs. 0</span>
+        </div>
+        <div class="summary-row">
+            <span>Discount</span>
+            <span>Rs. 0</span>
+        </div>
+        <hr class="summary-divider">
+        <div class="summary-total">
+            <span>Total</span>
+            <span id="total">Rs. 0</span>
+        </div>
+
+        <div class="delivery-section">
+            <label for="delivery-address">Delivery Address *</label>
+            <textarea id="delivery-address" placeholder="Enter your full delivery address..."></textarea>
+        </div>
+
+        <button class="checkout-btn" id="checkout-btn" onclick="checkout()">
+            <i class="fas fa-credit-card"></i> Proceed to Checkout
+        </button>
+    </div>
+
+</div>
+
+<script src="cart.js"></script>
+</body>
+</html>
