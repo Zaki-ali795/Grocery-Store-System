@@ -101,19 +101,17 @@ const productController = {
     
     async getFlashDeals(req, res) {
         try {
-            const result = await executeQuery(`
-                SELECT ProductID, pName AS name, price, deal_price, deal_end,
-                       unit, pic_url AS image, stock_Quantity AS stock
-                FROM Product
-                WHERE inDeal = 1 AND deal_end > GETDATE() AND stock_Quantity > 0
-                ORDER BY deal_end ASC
-            `);
-            
-            res.json({
-                success: true,
-                count: result.recordset.length,
-                deals: result.recordset
-            });
+        const { category } = req.query;
+        let query = `SELECT ProductID, pName AS name, price, deal_price, deal_end,
+                            unit, pic_url AS image, stock_Quantity AS stock
+                     FROM Product
+                     WHERE inDeal = 1 AND deal_end > GETDATE() AND stock_Quantity > 0`;
+
+        if (category) query += ` AND CategoryID = ${parseInt(category)}`;
+        query += ` ORDER BY deal_end ASC`;
+
+        const result = await executeQuery(query);
+        res.json({ success: true, count: result.recordset.length, deals: result.recordset });
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

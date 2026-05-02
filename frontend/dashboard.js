@@ -90,12 +90,12 @@ function renderProducts(products, title = 'All Products') {
 // Load all products
 async function loadAllProducts(btn) {
     setActiveCategory(btn);
-    document.getElementById('section-title').textContent = 'All Products';
     showSkeletons();
     try {
         const res = await fetch(`${API}/products`);
         const data = await res.json();
         renderProducts(data.products || []);
+        loadDeals();
     } catch {
         showToast('Failed to load products', true);
     }
@@ -110,6 +110,7 @@ async function loadByCategory(categoryId, btn) {
         const data = await res.json();
         const title = btn.textContent.trim();
         renderProducts(data.products || [], title);
+        loadDeals(categoryId);
     } catch {
         showToast('Failed to load category', true);
     }
@@ -157,17 +158,19 @@ document.getElementById('search-input').addEventListener('keydown', e => {
 });
 
 // Load flash deals
-async function loadDeals() {
-    document.getElementById('deals-section').style.display = 'none'; // hide by default
+async function loadDeals(categoryId = null) {
+    document.getElementById('deals-section').style.display = 'none';
     try {
-        const res = await fetch(`${API}/products/flash-deals`);
+        const url = categoryId
+            ? `${API}/products/flash-deals?category=${categoryId}`
+            : `${API}/products/flash-deals`;
+        const res = await fetch(url);
         const data = await res.json();
 
-        if (!data.deals || data.deals.length === 0) return; // stay hidden
+        if (!data.deals || data.deals.length === 0) return;
 
-        document.getElementById('deals-section').style.display = ''; // show only if deals exist
-        const grid = document.getElementById('deals-grid');
-        grid.innerHTML = data.deals.map(d => {
+        document.getElementById('deals-section').style.display = '';
+        document.getElementById('deals-grid').innerHTML = data.deals.map(d => {
             const pct = Math.round((1 - d.deal_price / d.price) * 100);
             return `
             <div class="deal-card" onclick="addToCart(${d.ProductID}, '${d.name}')">
@@ -181,7 +184,7 @@ async function loadDeals() {
             </div>`;
         }).join('');
     } catch {
-        // stay hidden on error
+        // stay hidden
     }
 }
 
@@ -237,7 +240,6 @@ function setActiveCategory(btn) {
 }
 
 // Init
-loadDeals();
 loadAllProducts(document.querySelector('.category-item'));
 updateCartCount();
-setInterval(loadDeals, 30000);
+setInterval(() => loadDeals(), 30000);
