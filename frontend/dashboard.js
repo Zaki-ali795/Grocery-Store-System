@@ -115,10 +115,13 @@ async function loadByCategory(categoryId, btn) {
     }
 }
 
-// Search
+// Search — fires on button click
 async function searchProducts() {
     const q = document.getElementById('search-input').value.trim();
-    if (!q) { loadAllProducts(document.querySelector('.category-item')); return; }
+    if (!q) {
+        loadAllProducts(document.querySelector('.category-item'));
+        return;
+    }
     showSkeletons();
     try {
         const res = await fetch(`${API}/products/search?q=${encodeURIComponent(q)}`);
@@ -130,6 +133,24 @@ async function searchProducts() {
     }
 }
 
+// Live search — fires on every keystroke
+document.getElementById('search-input').addEventListener('input', async function() {
+    const q = this.value.trim();
+    if (!q) {
+        loadAllProducts(document.querySelector('.category-item'));
+        return;
+    }
+    showSkeletons();
+    try {
+        const res = await fetch(`${API}/products/search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        renderProducts(data.products || [], `Results for "${q}"`);
+        document.getElementById('deals-section').style.display = 'none';
+    } catch {
+        showToast('Search failed', true);
+    }
+});
+
 // Enter key for search
 document.getElementById('search-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') searchProducts();
@@ -137,16 +158,15 @@ document.getElementById('search-input').addEventListener('keydown', e => {
 
 // Load flash deals
 async function loadDeals() {
+    document.getElementById('deals-section').style.display = 'none'; // hide by default
     try {
         const res = await fetch(`${API}/products/flash-deals`);
         const data = await res.json();
+
+        if (!data.deals || data.deals.length === 0) return; // stay hidden
+
+        document.getElementById('deals-section').style.display = ''; // show only if deals exist
         const grid = document.getElementById('deals-grid');
-
-        if (!data.deals || data.deals.length === 0) {
-            document.getElementById('deals-section').style.display = 'none';
-            return;
-        }
-
         grid.innerHTML = data.deals.map(d => {
             const pct = Math.round((1 - d.deal_price / d.price) * 100);
             return `
@@ -161,7 +181,7 @@ async function loadDeals() {
             </div>`;
         }).join('');
     } catch {
-        document.getElementById('deals-section').style.display = 'none';
+        // stay hidden on error
     }
 }
 
@@ -195,8 +215,7 @@ async function updateCartCount() {
     try {
         const res = await fetch(`${API}/cart`, { headers: authHeaders() });
         const data = await res.json();
-        const items = data.cart || data.items || [];
-        document.getElementById('cart-count').textContent = items.length || 0;
+        document.getElementById('cart-count').textContent = data.cart?.itemCount || 0;
     } catch {}
 }
 
@@ -221,3 +240,4 @@ function setActiveCategory(btn) {
 loadDeals();
 loadAllProducts(document.querySelector('.category-item'));
 updateCartCount();
+setInterval(loadDeals, 30000);

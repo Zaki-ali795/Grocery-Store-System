@@ -170,7 +170,6 @@
 
         .category-item:hover { background: #f0f7f0; color: #2c6e2f; }
         .category-item.active { background: #2c6e2f; color: white; }
-
         .category-item i { width: 16px; text-align: center; }
 
         /* ── Main content ── */
@@ -224,11 +223,8 @@
         }
 
         .deal-name { font-size: 0.82rem; font-weight: 500; margin-bottom: 0.3rem; }
-
         .deal-prices { display: flex; align-items: center; gap: 0.5rem; }
-
         .deal-original { font-size: 0.75rem; opacity: 0.7; text-decoration: line-through; }
-
         .deal-current { font-size: 0.95rem; font-weight: 700; }
 
         .deal-badge {
@@ -253,10 +249,7 @@
             font-size: 1.1rem;
         }
 
-        .product-count {
-            font-size: 0.85rem;
-            color: #6c757d;
-        }
+        .product-count { font-size: 0.85rem; color: #6c757d; }
 
         /* Product grid */
         .products-grid {
@@ -309,11 +302,7 @@
             text-overflow: ellipsis;
         }
 
-        .product-category {
-            font-size: 0.75rem;
-            color: #6c757d;
-            margin-bottom: 0.5rem;
-        }
+        .product-category { font-size: 0.75rem; color: #6c757d; margin-bottom: 0.5rem; }
 
         .product-price-row {
             display: flex;
@@ -321,16 +310,8 @@
             justify-content: space-between;
         }
 
-        .product-price {
-            font-weight: 700;
-            color: #2c6e2f;
-            font-size: 1rem;
-        }
-
-        .product-unit {
-            font-size: 0.75rem;
-            color: #6c757d;
-        }
+        .product-price { font-weight: 700; color: #2c6e2f; font-size: 1rem; }
+        .product-unit { font-size: 0.75rem; color: #6c757d; }
 
         .add-btn {
             background: #2c6e2f;
@@ -350,13 +331,7 @@
 
         .add-btn:hover { background: #1f5622; transform: scale(1.1); }
 
-        /* Loading / empty states */
-        .loading-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 1rem;
-        }
-
+        /* Skeleton */
         .skeleton {
             background: white;
             border-radius: 1rem;
@@ -503,13 +478,11 @@
     <main class="main-content">
 
         <!-- Flash Deals -->
-        <div class="deals-section" id="deals-section">
+        <div class="deals-section" id="deals-section" style="display:none">
             <div class="deals-header">
                 <i class="fas fa-bolt"></i> Flash Deals
             </div>
-            <div class="deals-grid" id="deals-grid">
-                <div style="color:rgba(255,255,255,0.7); font-size:0.85rem;">Loading deals...</div>
-            </div>
+            <div class="deals-grid" id="deals-grid"></div>
         </div>
 
         <!-- Products -->
@@ -518,15 +491,7 @@
             <span class="product-count" id="product-count"></span>
         </div>
 
-        <div class="products-grid" id="products-grid">
-            <!-- Skeleton loaders -->
-            ${[...Array(8)].map(() => `
-            <div class="skeleton">
-                <div class="skeleton-img"></div>
-                <div class="skeleton-text"></div>
-                <div class="skeleton-text short"></div>
-            </div>`).join('')}
-        </div>
+        <div class="products-grid" id="products-grid"></div>
 
     </main>
 </div>
