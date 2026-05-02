@@ -18,11 +18,13 @@ const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const adminVerifyRoutes = require('./routes/adminVerifyRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/admin-verify', adminVerifyRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {
@@ -34,8 +36,6 @@ app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
 
-module.exports = app;
-
 // Connect to database on startup
 const { getDb } = require('./utils/database');
 getDb().then(() => {
@@ -44,3 +44,5 @@ getDb().then(() => {
     console.error('❌ Database connection failed:', err.message);
     process.exit(1);
 });
+
+module.exports = app;
