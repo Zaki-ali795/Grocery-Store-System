@@ -6,7 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'freshmart-secret-key-2024';
 
 /**
  * Admin Authorization Middleware
- * Verifies user has admin role
+ * Verifies user has admin approval (admin_approved = 1)
  */
 async function isAdmin(req, res, next) {
     try {
@@ -24,18 +24,19 @@ async function isAdmin(req, res, next) {
         const decoded = jwt.verify(token, JWT_SECRET);
         const db = await getDb();
         
+        // ✅ FIXED: Check admin_approved = 1 instead of role = 'admin'
         const result = await db.request()
             .input('userId', sql.Int, decoded.userId)
             .query(`
-                SELECT UserID, name, email, role 
+                SELECT UserID, name, email, role, admin_approved
                 FROM Users 
-                WHERE UserID = @userId AND role = 'admin'
+                WHERE UserID = @userId AND admin_approved = 1
             `);
         
         if (result.recordset.length === 0) {
             return res.status(403).json({ 
                 success: false,
-                error: 'Access denied. Admin privileges required.' 
+                error: 'Access denied. Admin privileges required. Your admin request may be pending or rejected.' 
             });
         }
         
@@ -43,7 +44,8 @@ async function isAdmin(req, res, next) {
             id: result.recordset[0].UserID,
             name: result.recordset[0].name,
             email: result.recordset[0].email,
-            role: result.recordset[0].role
+            role: result.recordset[0].role,  // Will be 'customer'
+            isAdmin: true
         };
         
         next();
@@ -86,11 +88,12 @@ async function checkAdmin(req, res, next) {
         const decoded = jwt.verify(token, JWT_SECRET);
         const db = await getDb();
         
+        // ✅ FIXED: Check admin_approved column
         const result = await db.request()
             .input('userId', sql.Int, decoded.userId)
-            .query('SELECT role FROM Users WHERE UserID = @userId AND role = "admin"');
+            .query('SELECT admin_approved FROM Users WHERE UserID = @userId');
         
-        req.isAdmin = result.recordset.length > 0;
+        req.isAdmin = result.recordset[0]?.admin_approved === 1;
         next();
     } catch (error) {
         req.isAdmin = false;

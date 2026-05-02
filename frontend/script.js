@@ -246,12 +246,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 const response = await fetch('http://localhost:3000/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password, role: 'admin' })
+                    body: JSON.stringify({ email, password, role: 'customer' })
                 });
                 const result = await response.json();
                 
                 if (result.success) {
-                    const adminData = JSON.stringify({ email, role: 'admin', token: result.token });
+                    const adminData = JSON.stringify({ email, role: 'customer', token: result.token });
                     if (rememberMe) {
                         localStorage.setItem('freshmart_admin', adminData);
                     } else {
@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     showToast(`🔒 Welcome Admin! Redirecting...`);
                     setTimeout(() => {
-                        window.location.href = '/admin-panel.html';
+                        window.location.href = '/frontend/admin-request.html';
                     }, 1500);
                 } else {
                     showToast(result.error || 'Invalid admin credentials', true);

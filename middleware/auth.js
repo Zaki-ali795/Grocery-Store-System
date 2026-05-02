@@ -27,11 +27,11 @@ async function authenticate(req, res, next) {
         // Get database connection
         const db = await getDb();
         
-        // Verify user still exists in database
+        // ✅ FIXED: Added admin_approved to SELECT
         const result = await db.request()
             .input('userId', sql.Int, decoded.userId)
             .query(`
-                SELECT UserID, name, email, role, phone_no, City, Address
+                SELECT UserID, name, email, role, phone_no, City, Address, admin_approved
                 FROM Users 
                 WHERE UserID = @userId
             `);
@@ -45,15 +45,16 @@ async function authenticate(req, res, next) {
         
         const user = result.recordset[0];
         
-        // Attach user to request object
+        // ✅ FIXED: Attach isAdmin flag to req.user
         req.user = {
             id: user.UserID,
             name: user.name,
             email: user.email,
-            role: user.role,
+            role: user.role,  // Always 'customer'
             phone: user.phone_no,
             city: user.City,
-            address: user.Address
+            address: user.Address,
+            isAdmin: user.admin_approved === 1  // ← ADDED THIS
         };
         
         next();
@@ -92,12 +93,20 @@ async function optionalAuth(req, res, next) {
             const decoded = jwt.verify(token, JWT_SECRET);
             const db = await getDb();
             
+            // ✅ FIXED: Added admin_approved
             const result = await db.request()
                 .input('userId', sql.Int, decoded.userId)
-                .query('SELECT UserID, name, email, role FROM Users WHERE UserID = @userId');
+                .query('SELECT UserID, name, email, role, admin_approved FROM Users WHERE UserID = @userId');
             
             if (result.recordset.length > 0) {
-                req.user = result.recordset[0];
+                const user = result.recordset[0];
+                req.user = {
+                    id: user.UserID,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    isAdmin: user.admin_approved === 1  // ← ADDED THIS
+                };
             }
         }
         next();

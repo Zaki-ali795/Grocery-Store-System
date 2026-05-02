@@ -70,6 +70,7 @@ const authController = {
         }
     },
 
+    // ✅ UPDATED LOGIN - Works with dual-role schema
     async login(req, res) {
         try {
             const { email, password, role } = req.body;
@@ -81,8 +82,10 @@ const authController = {
                 });
             }
 
+            // Get user from database - note role is always 'customer' in DB
             const result = await executeQuery(
-                `SELECT UserID, name, email, password_hash, role, admin_approved 
+                `SELECT UserID, name, email, password_hash, phone_no, Address, City, 
+                        role, admin_approved, approved_at
                  FROM Users 
                  WHERE email = @email`,
                 [{ name: 'email', value: email }]
@@ -97,6 +100,7 @@ const authController = {
 
             const user = result.recordset[0];
 
+            // Verify password
             const isValidPassword = await bcrypt.compare(password, user.password_hash);
             if (!isValidPassword) {
                 return res.status(401).json({
@@ -105,20 +109,30 @@ const authController = {
                 });
             }
 
-            if (role === 'admin' && user.admin_approved !== 1) {
-                return res.status(403).json({
-                    success: false,
-                    error: 'Not authorized as admin.'
-                });
+            // ✅ Determine access based on admin_approved, not role
+            let tokenRole = 'customer';
+            let isAdminUser = false;
+
+            if (role === 'admin') {
+                if (user.admin_approved === 1) {
+                    tokenRole = 'admin';
+                    isAdminUser = true;
+                } else {
+                    return res.status(403).json({
+                        success: false,
+                        error: 'Not authorized as admin. Your admin request may be pending or rejected.'
+                    });
+                }
             }
 
-            const tokenRole = (role === 'admin' && user.admin_approved === 1) ? 'admin' : 'customer';
+            // ✅ Generate token - role in token is for frontend display only
             const token = jwt.sign(
                 {
                     userId: user.UserID,
                     email: user.email,
-                    role: tokenRole,
-                    name: user.name
+                    role: tokenRole,  // 'customer' or 'admin' for frontend
+                    name: user.name,
+                    isAdmin: user.admin_approved === 1  // Add this flag
                 },
                 JWT_SECRET,
                 { expiresIn: tokenRole === 'admin' ? '8h' : '24h' }
@@ -126,16 +140,21 @@ const authController = {
 
             res.json({
                 success: true,
-                message: 'Login successful',
+                message: `Login successful as ${tokenRole}`,
                 token: token,
                 role: tokenRole,
                 name: user.name,
+                isAdmin: user.admin_approved === 1,
                 user: {
                     id: user.UserID,
                     name: user.name,
                     email: user.email,
-                    role: tokenRole,
-                    isAdmin: user.admin_approved === 1
+                    phone: user.phone_no,
+                    address: user.Address,
+                    city: user.City,
+                    role: 'customer',  // Always 'customer' from DB
+                    isAdmin: user.admin_approved === 1,  // This tells frontend if admin
+                    canAccessAdmin: user.admin_approved === 1
                 }
             });
 
@@ -153,7 +172,7 @@ const authController = {
             const userId = req.user.userId;
 
             const result = await executeQuery(
-                `SELECT UserID, name, email, phone_no, Address, City, role, admin_approved, created_at
+                `SELECT UserID, name, email, phone_no, Address, City, role, admin_approved, approved_at, created_at
                  FROM Users 
                  WHERE UserID = @userId`,
                 [{ name: 'userId', value: userId, type: sql.Int }]
@@ -166,9 +185,22 @@ const authController = {
                 });
             }
 
+            const user = result.recordset[0];
+
             res.json({
                 success: true,
-                user: result.recordset[0]
+                user: {
+                    id: user.UserID,
+                    name: user.name,
+                    email: user.email,
+                    phone: user.phone_no,
+                    address: user.Address,
+                    city: user.City,
+                    role: user.role,  // Always 'customer'
+                    isAdmin: user.admin_approved === 1,
+                    adminApproved: user.admin_approved === 1,
+                    approvedAt: user.approved_at
+                }
             });
 
         } catch (error) {
@@ -243,6 +275,30 @@ const authController = {
 
         } catch (error) {
             console.error('Change password error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Internal server error'
+            });
+        }
+    },
+
+    // ✅ New: Check if user is admin (for frontend)
+    async checkAdminStatus(req, res) {
+        try {
+            const userId = req.user.userId;
+
+            const result = await executeQuery(
+                `SELECT admin_approved FROM Users WHERE UserID = @userId`,
+                [{ name: 'userId', value: userId, type: sql.Int }]
+            );
+
+            res.json({
+                success: true,
+                isAdmin: result.recordset[0]?.admin_approved === 1
+            });
+
+        } catch (error) {
+            console.error('Check admin error:', error);
             res.status(500).json({
                 success: false,
                 error: 'Internal server error'

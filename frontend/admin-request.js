@@ -1,7 +1,11 @@
 const API = 'http://localhost:3000/api';
 
 function getSession() {
-    const raw = localStorage.getItem('freshmart_user') || sessionStorage.getItem('freshmart_user');
+    // Check admin session first
+    let raw = localStorage.getItem('freshmart_admin') || sessionStorage.getItem('freshmart_admin');
+    if (raw) return JSON.parse(raw);
+    // Then check customer session
+    raw = localStorage.getItem('freshmart_user') || sessionStorage.getItem('freshmart_user');
     return raw ? JSON.parse(raw) : null;
 }
 
@@ -29,6 +33,8 @@ function showToast(message, isError = false) {
 function logout() {
     localStorage.removeItem('freshmart_user');
     sessionStorage.removeItem('freshmart_user');
+    localStorage.removeItem('freshmart_admin');
+    sessionStorage.removeItem('freshmart_admin');
     window.location.href = 'index.html';
 }
 
@@ -56,7 +62,6 @@ function showStatus(status, request) {
         icon.textContent = '❌';
         title.textContent = 'Request Rejected';
         desc.textContent = 'Your admin request was not approved. You may submit a new request.';
-        // Keep form visible so they can reapply
     }
 }
 

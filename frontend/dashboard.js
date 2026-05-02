@@ -1,8 +1,9 @@
 const API = 'http://localhost:3000/api';
 
-// Get token and user from storage
 function getSession() {
-    const raw = localStorage.getItem('freshmart_user') || sessionStorage.getItem('freshmart_user');
+    let raw = localStorage.getItem('freshmart_admin') || sessionStorage.getItem('freshmart_admin');
+    if (raw) return JSON.parse(raw);
+    raw = localStorage.getItem('freshmart_user') || sessionStorage.getItem('freshmart_user');
     return raw ? JSON.parse(raw) : null;
 }
 
@@ -18,12 +19,10 @@ function authHeaders() {
     };
 }
 
-// Redirect to login if not logged in
 const session = getSession();
 if (!session) window.location.href = 'index.html';
 else document.getElementById('user-name').textContent = session.name || session.email;
 
-// Toast
 function showToast(message, isError = false) {
     const existing = document.querySelector('.toast-message');
     if (existing) existing.remove();
@@ -34,14 +33,14 @@ function showToast(message, isError = false) {
     setTimeout(() => toast.remove(), 3000);
 }
 
-// Logout
 function logout() {
     localStorage.removeItem('freshmart_user');
     sessionStorage.removeItem('freshmart_user');
+    localStorage.removeItem('freshmart_admin');
+    sessionStorage.removeItem('freshmart_admin');
     window.location.href = 'index.html';
 }
 
-// Render product card
 function productCard(p) {
     const img = p.image
         ? `<img class="product-img" src="${p.image}" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
@@ -69,7 +68,6 @@ function productCard(p) {
     </div>`;
 }
 
-// Render products grid
 function renderProducts(products, title = 'All Products') {
     document.getElementById('section-title').textContent = title;
     document.getElementById('product-count').textContent = `${products.length} item${products.length !== 1 ? 's' : ''}`;
@@ -87,7 +85,6 @@ function renderProducts(products, title = 'All Products') {
     grid.innerHTML = products.map(productCard).join('');
 }
 
-// Load all products
 async function loadAllProducts(btn) {
     setActiveCategory(btn);
     showSkeletons();
@@ -101,7 +98,6 @@ async function loadAllProducts(btn) {
     }
 }
 
-// Load by category
 async function loadByCategory(categoryId, btn) {
     setActiveCategory(btn);
     showSkeletons();
@@ -116,7 +112,6 @@ async function loadByCategory(categoryId, btn) {
     }
 }
 
-// Search — fires on button click
 async function searchProducts() {
     const q = document.getElementById('search-input').value.trim();
     if (!q) {
@@ -134,7 +129,6 @@ async function searchProducts() {
     }
 }
 
-// Live search — fires on every keystroke
 document.getElementById('search-input').addEventListener('input', async function() {
     const q = this.value.trim();
     if (!q) {
@@ -152,12 +146,10 @@ document.getElementById('search-input').addEventListener('input', async function
     }
 });
 
-// Enter key for search
 document.getElementById('search-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') searchProducts();
 });
 
-// Load flash deals
 async function loadDeals(categoryId = null) {
     document.getElementById('deals-section').style.display = 'none';
     try {
@@ -188,7 +180,6 @@ async function loadDeals(categoryId = null) {
     }
 }
 
-// Add to cart
 async function addToCart(productId, name) {
     const token = getToken();
     if (!token) { showToast('Please log in first', true); return; }
@@ -211,7 +202,6 @@ async function addToCart(productId, name) {
     }
 }
 
-// Update cart count in navbar
 async function updateCartCount() {
     const token = getToken();
     if (!token) return;
@@ -222,7 +212,6 @@ async function updateCartCount() {
     } catch {}
 }
 
-// Skeleton loaders
 function showSkeletons() {
     document.getElementById('products-grid').innerHTML = Array(8).fill(`
         <div class="skeleton">
@@ -239,7 +228,6 @@ function setActiveCategory(btn) {
     document.getElementById('search-input').value = '';
 }
 
-// Init
 loadAllProducts(document.querySelector('.category-item'));
 updateCartCount();
 setInterval(() => loadDeals(), 30000);

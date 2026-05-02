@@ -1,8 +1,9 @@
 const API = 'http://localhost:3000/api';
 
-// Session helpers
 function getSession() {
-    const raw = localStorage.getItem('freshmart_user') || sessionStorage.getItem('freshmart_user');
+    let raw = localStorage.getItem('freshmart_admin') || sessionStorage.getItem('freshmart_admin');
+    if (raw) return JSON.parse(raw);
+    raw = localStorage.getItem('freshmart_user') || sessionStorage.getItem('freshmart_user');
     return raw ? JSON.parse(raw) : null;
 }
 
@@ -14,12 +15,10 @@ function authHeaders() {
     };
 }
 
-// Redirect if not logged in
 const session = getSession();
 if (!session) window.location.href = 'index.html';
 else document.getElementById('user-name').textContent = session.name || session.email;
 
-// Toast
 function showToast(message, isError = false) {
     const existing = document.querySelector('.toast-message');
     if (existing) existing.remove();
@@ -30,14 +29,14 @@ function showToast(message, isError = false) {
     setTimeout(() => toast.remove(), 3000);
 }
 
-// Logout
 function logout() {
     localStorage.removeItem('freshmart_user');
     sessionStorage.removeItem('freshmart_user');
+    localStorage.removeItem('freshmart_admin');
+    sessionStorage.removeItem('freshmart_admin');
     window.location.href = 'index.html';
 }
 
-// Load cart
 async function loadCart() {
     try {
         const res = await fetch(`${API}/cart`, { headers: authHeaders() });
@@ -54,7 +53,6 @@ async function loadCart() {
     }
 }
 
-// Render cart
 function renderCart(cart) {
     const items = cart.items || [];
     document.getElementById('item-count').textContent = items.length;
@@ -101,13 +99,11 @@ function renderCart(cart) {
     document.getElementById('checkout-btn').disabled = false;
 }
 
-// Update summary
 function updateSummary(total) {
     document.getElementById('subtotal').textContent = `Rs. ${parseFloat(total).toFixed(0)}`;
     document.getElementById('total').textContent = `Rs. ${parseFloat(total).toFixed(0)}`;
 }
 
-// Update quantity
 async function updateQty(itemId, newQty) {
     if (newQty < 1) {
         removeItem(itemId);
@@ -130,7 +126,6 @@ async function updateQty(itemId, newQty) {
     }
 }
 
-// Remove item
 async function removeItem(itemId) {
     try {
         const res = await fetch(`${API}/cart/remove/${itemId}`, {
@@ -149,7 +144,6 @@ async function removeItem(itemId) {
     }
 }
 
-// Clear cart
 async function clearCart() {
     if (!confirm('Clear all items from your cart?')) return;
     try {
@@ -169,7 +163,6 @@ async function clearCart() {
     }
 }
 
-// Checkout
 async function checkout() {
     const address = document.getElementById('delivery-address').value.trim();
     if (!address) {
@@ -207,5 +200,4 @@ async function checkout() {
     }
 }
 
-// Init
 loadCart();
