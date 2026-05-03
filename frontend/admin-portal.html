@@ -19,13 +19,11 @@
             color: #1e2a1c;
         }
 
-        /* Sidebar Layout */
         .admin-container {
             display: flex;
             min-height: 100vh;
         }
 
-        /* Sidebar */
         .sidebar {
             width: 260px;
             background: #1e3a2f;
@@ -77,14 +75,12 @@
             width: 20px;
         }
 
-        /* Main Content */
         .main-content {
             flex: 1;
             margin-left: 260px;
             padding: 1.5rem;
         }
 
-        /* Top Bar */
         .top-bar {
             background: white;
             border-radius: 1rem;
@@ -129,7 +125,6 @@
             background: #c0392b;
         }
 
-        /* Stats Cards */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -156,7 +151,6 @@
             color: #2c6e2f;
         }
 
-        /* Tables */
         .card {
             background: white;
             border-radius: 1rem;
@@ -203,9 +197,9 @@
             font-weight: 600;
         }
 
-        .status-pending { background: #fff3cd; color: #856404; }
+        .status-pending  { background: #fff3cd; color: #856404; }
         .status-delivered { background: #d4edda; color: #155724; }
-        .status-shipped { background: #cce5ff; color: #004085; }
+        .status-shipped  { background: #cce5ff; color: #004085; }
 
         .btn-sm {
             padding: 0.3rem 0.8rem;
@@ -216,20 +210,9 @@
             margin-right: 0.3rem;
         }
 
-        .btn-approve {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-reject {
-            background: #dc3545;
-            color: white;
-        }
-
-        .btn-edit {
-            background: #ffc107;
-            color: #1e2a1c;
-        }
+        .btn-approve { background: #28a745; color: white; }
+        .btn-reject  { background: #dc3545; color: white; }
+        .btn-edit    { background: #ffc107; color: #1e2a1c; }
 
         .search-box {
             padding: 0.5rem 1rem;
@@ -243,126 +226,158 @@
             border-color: #2c6e2f;
         }
 
-        .hide {
-            display: none;
-        }
+        .hide { display: none !important; }
 
         @media (max-width: 768px) {
-            .sidebar {
-                width: 70px;
-            }
-            .sidebar-header h2 span, .nav-item span {
-                display: none;
-            }
-            .main-content {
-                margin-left: 70px;
-            }
+            .sidebar { width: 70px; }
+            .sidebar-header h2 span, .nav-item span { display: none; }
+            .main-content { margin-left: 70px; }
         }
-        /* Modal Styles */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
 
-.modal {
-    background: white;
-    border-radius: 1rem;
-    width: 90%;
-    max-width: 600px;
-    max-height: 90vh;
-    overflow-y: auto;
-}
+        /* ── Modal ── */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
 
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid #f0f0f0;
-}
+        .modal {
+            background: white;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
 
-.modal-header h3 {
-    font-family: 'Poppins', sans-serif;
-    font-size: 1.1rem;
-}
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
 
-.modal-close {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: #6c757d;
-}
+        .modal-header h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.1rem;
+        }
 
-.modal-body {
-    padding: 1.5rem;
-}
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+        }
 
-.form-row {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
+        .modal-body { padding: 1.5rem; }
 
-.form-group {
-    flex: 1;
-    margin-bottom: 1rem;
-}
+        .form-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
 
-.form-group label {
-    display: block;
-    font-size: 0.85rem;
-    font-weight: 500;
-    margin-bottom: 0.3rem;
-    color: #4a5b46;
-}
+        .form-group {
+            flex: 1;
+            margin-bottom: 1rem;
+        }
 
-.modal-input, .modal-textarea {
-    width: 100%;
-    padding: 0.6rem 0.8rem;
-    border: 1px solid #dde0e3;
-    border-radius: 0.5rem;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.9rem;
-}
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+            color: #4a5b46;
+        }
 
-.modal-input:focus, .modal-textarea:focus {
-    outline: none;
-    border-color: #2c6e2f;
-}
+        .modal-input, .modal-textarea, .modal-select {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            border: 1px solid #dde0e3;
+            border-radius: 0.5rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+        }
 
-.modal-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    margin-top: 1.5rem;
-}
+        .modal-input:focus, .modal-textarea:focus, .modal-select:focus {
+            outline: none;
+            border-color: #2c6e2f;
+        }
 
-.btn-cancel {
-    background: #6c757d;
-    color: white;
-    border: none;
-    padding: 0.6rem 1.2rem;
-    border-radius: 2rem;
-    cursor: pointer;
-}
+        .deal-section {
+            background: #f8fff8;
+            border: 1px solid #c8e6c9;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 0.5rem;
+        }
 
-.btn-submit {
-    background: #2c6e2f;
-    color: white;
-    border: none;
-    padding: 0.6rem 1.2rem;
-    border-radius: 2rem;
-    cursor: pointer;
-}
+        .deal-section h4 {
+            font-size: 0.9rem;
+            color: #2c6e2f;
+            margin-bottom: 0.75rem;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 2rem;
+            cursor: pointer;
+        }
+
+        .btn-submit {
+            background: #2c6e2f;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 2rem;
+            cursor: pointer;
+        }
+
+        .btn-submit:disabled {
+            background: #8ab88c;
+            cursor: not-allowed;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 0.8rem 1.4rem;
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 2000;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast.success { background: #28a745; }
+        .toast.error   { background: #dc3545; }
     </style>
 </head>
 <body>
@@ -448,12 +463,21 @@
                         </button>
                     </div>
                     <div style="margin-bottom: 1rem;">
-                        <input type="text" id="product-search" class="search-box" placeholder="Search products..." onkeyup="searchProducts()">
+                        <input type="text" id="product-search" class="search-box"
+                               placeholder="Search products..." onkeyup="searchProducts()">
                     </div>
                     <div style="overflow-x: auto;">
                         <table id="products-table">
                             <thead>
-                                <tr><th>ID</th><th>Product Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Unit</th><th>Actions</th></tr>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Product Name</th>
+                                    <th>Category</th>
+                                    <th>Price</th>
+                                    <th>Stock</th>
+                                    <th>Unit</th>
+                                    <th>Actions</th>
+                                </tr>
                             </thead>
                             <tbody>
                                 <tr><td colspan="7">Loading...</td></tr>
@@ -466,9 +490,7 @@
             <!-- Orders Page -->
             <div id="orders-page" class="hide">
                 <div class="card">
-                    <div class="card-header">
-                        <h3>All Orders</h3>
-                    </div>
+                    <div class="card-header"><h3>All Orders</h3></div>
                     <div style="overflow-x: auto;">
                         <table id="all-orders-table">
                             <thead>
@@ -485,9 +507,7 @@
             <!-- Admin Requests Page -->
             <div id="requests-page" class="hide">
                 <div class="card">
-                    <div class="card-header">
-                        <h3>Admin Access Requests</h3>
-                    </div>
+                    <div class="card-header"><h3>Admin Access Requests</h3></div>
                     <div style="overflow-x: auto;">
                         <table id="requests-table">
                             <thead>
@@ -503,6 +523,90 @@
         </main>
     </div>
 
+    <!-- EDIT PRODUCT MODAL -->
+    <div class="modal-overlay hide" id="edit-product-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit" style="color:#2c6e2f; margin-right:0.4rem;"></i> Edit Product</h3>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-product-id">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-name">Product Name *</label>
+                        <input type="text" id="edit-name" class="modal-input" placeholder="e.g. Apple 1 kg">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-category">Category *</label>
+                        <select id="edit-category" class="modal-select">
+                            <option value="">Loading categories...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-price">Price (Rs.) *</label>
+                        <input type="number" id="edit-price" class="modal-input" placeholder="0.00" min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-stock">Stock Quantity *</label>
+                        <input type="number" id="edit-stock" class="modal-input" placeholder="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-unit">Unit *</label>
+                        <input type="text" id="edit-unit" class="modal-input" placeholder="e.g. kg, liters">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-image">Image URL</label>
+                    <input type="text" id="edit-image" class="modal-input" placeholder="https://example.com/image.jpg">
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-description">Description</label>
+                    <textarea id="edit-description" class="modal-textarea" rows="3" placeholder="Product description..."></textarea>
+                </div>
+
+                <div class="deal-section">
+                    <h4><i class="fas fa-tag"></i> Deal / Promotion</h4>
+                    <div class="form-row" style="align-items:center; margin-bottom:0.5rem;">
+                        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+                            <input type="checkbox" id="edit-inDeal" onchange="toggleDealFields()" style="width:16px; height:16px;">
+                            <span style="font-size:0.9rem; font-weight:500;">Activate Deal</span>
+                        </label>
+                    </div>
+                    <div id="deal-fields" class="hide">
+                        <div class="form-row">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label for="edit-deal-price">Deal Price (Rs.) *</label>
+                                <input type="number" id="edit-deal-price" class="modal-input" placeholder="0.00" min="0" step="0.01">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label for="edit-deal-end">Deal End Date *</label>
+                                <input type="datetime-local" id="edit-deal-end" class="modal-input">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-buttons">
+                    <button class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+                    <button class="btn-submit" id="edit-submit-btn" onclick="submitEditProduct()">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Single script tag — all logic lives in admin-portal.js -->
     <script src="admin-portal.js"></script>
 </body>
 </html>

@@ -15,5 +15,6 @@ router.get('/categories/all', productController.getCategories);
 
 // Admin only routes (require authentication and admin rights)
 router.post('/add', authenticate, isAdmin, productController.addProduct);
+router.put('/:id', authenticate, isAdmin, productController.updateProduct);
 
 module.exports = router;
