@@ -1,4 +1,4 @@
-const sql = require('mssql');
+const sql = require('mssql/msnodesqlv8');
 const { getDb } = require('../utils/database');
 
 const adminVerificationController = {

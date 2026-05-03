@@ -1,16 +1,16 @@
 const jwt = require('jsonwebtoken');
-const sql = require('mssql');
+const sql = require('mssql/msnodesqlv8');
 const { getDb } = require('../utils/database');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'freshmart-secret-key-2024';
 
 /**
- * Authentication Middleware
- * Verifies JWT token and attaches user to request
+ * Admin Authorization Middleware
+ * Verifies user has admin role
  */
-async function authenticate(req, res, next) {
+async function isAdmin(req, res, next) {
     try {
-        // Get token from header
+        // First authenticate the user
         const authHeader = req.headers.authorization;
         const token = authHeader && authHeader.split(' ')[1];
         
@@ -21,39 +21,29 @@ async function authenticate(req, res, next) {
             });
         }
         
-        // Verify token
         const decoded = jwt.verify(token, JWT_SECRET);
-        
-        // Get database connection
         const db = await getDb();
         
-        // Verify user still exists in database
         const result = await db.request()
             .input('userId', sql.Int, decoded.userId)
             .query(`
-                SELECT UserID, name, email, role, phone_no, City, Address
+                SELECT UserID, name, email, role 
                 FROM Users 
-                WHERE UserID = @userId
+                WHERE UserID = @userId AND role = 'admin'
             `);
         
         if (result.recordset.length === 0) {
-            return res.status(401).json({ 
+            return res.status(403).json({ 
                 success: false,
-                error: 'User not found or inactive' 
+                error: 'Access denied. Admin privileges required.' 
             });
         }
         
-        const user = result.recordset[0];
-        
-        // Attach user to request object
         req.user = {
-            id: user.UserID,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            phone: user.phone_no,
-            city: user.City,
-            address: user.Address
+            id: result.recordset[0].UserID,
+            name: result.recordset[0].name,
+            email: result.recordset[0].email,
+            role: result.recordset[0].role
         };
         
         next();
@@ -71,7 +61,7 @@ async function authenticate(req, res, next) {
             });
         }
         
-        console.error('Auth middleware error:', error);
+        console.error('Admin auth error:', error);
         return res.status(500).json({ 
             success: false,
             error: 'Internal server error' 
@@ -80,31 +70,32 @@ async function authenticate(req, res, next) {
 }
 
 /**
- * Optional Authentication
- * Similar to authenticate but doesn't fail if no token
+ * Check if user is admin (without throwing error)
+ * Useful for conditional logic
  */
-async function optionalAuth(req, res, next) {
+async function checkAdmin(req, res, next) {
     try {
         const authHeader = req.headers.authorization;
         const token = authHeader && authHeader.split(' ')[1];
         
-        if (token) {
-            const decoded = jwt.verify(token, JWT_SECRET);
-            const db = await getDb();
-            
-            const result = await db.request()
-                .input('userId', sql.Int, decoded.userId)
-                .query('SELECT UserID, name, email, role FROM Users WHERE UserID = @userId');
-            
-            if (result.recordset.length > 0) {
-                req.user = result.recordset[0];
-            }
+        if (!token) {
+            req.isAdmin = false;
+            return next();
         }
+        
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const db = await getDb();
+        
+        const result = await db.request()
+            .input('userId', sql.Int, decoded.userId)
+            .query('SELECT role FROM Users WHERE UserID = @userId AND role = "admin"');
+        
+        req.isAdmin = result.recordset.length > 0;
         next();
     } catch (error) {
-        // Just continue without user
+        req.isAdmin = false;
         next();
     }
 }
 
-module.exports = { authenticate, optionalAuth };
+module.exports = { isAdmin, checkAdmin };
