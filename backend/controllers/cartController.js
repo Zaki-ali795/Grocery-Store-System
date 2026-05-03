@@ -1,0 +1,200 @@
+const sql = require('mssql/msnodesqlv8');
+const { executeQuery } = require('../utils/database');
+
+const cartController = {
+    async viewCart(req, res) {
+        try {
+            let cartResult = await executeQuery(
+                `SELECT OrderID FROM Orders WHERE CustomerID = @userId AND status = 'cart'`,
+                [{ name: 'userId', type: sql.Int, value: req.user.id }]
+            );
+            
+            let orderId;
+            if (cartResult.recordset.length === 0) {
+                const insertResult = await executeQuery(
+                    `INSERT INTO Orders(CustomerID, status) VALUES(@userId, 'cart');
+                     SELECT SCOPE_IDENTITY() AS OrderID;`,
+                    [{ name: 'userId', type: sql.Int, value: req.user.id }]
+                );
+                orderId = insertResult.recordset[0].OrderID;
+            } else {
+                orderId = cartResult.recordset[0].OrderID;
+            }
+            
+            const itemsResult = await executeQuery(
+                `SELECT oi.OrderItemID, p.ProductID, p.pName AS name, 
+                        oi.quantity, oi.unit_price, oi.subtotal, p.unit
+                 FROM OrderItem oi
+                 JOIN Product p ON oi.ProductID = p.ProductID
+                 WHERE oi.OrderID = @orderId`,
+                [{ name: 'orderId', type: sql.Int, value: orderId }]
+            );
+            
+            const totalResult = await executeQuery(
+                `SELECT total_amount FROM Orders WHERE OrderID = @orderId`,
+                [{ name: 'orderId', type: sql.Int, value: orderId }]
+            );
+            
+            res.json({
+                success: true,
+                cart: {
+                    orderId: orderId,
+                    items: itemsResult.recordset,
+                    total: totalResult.recordset[0]?.total_amount || 0,
+                    itemCount: itemsResult.recordset.length
+                }
+            });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+    
+    async addToCart(req, res) {
+        try {
+            const { productId, quantity } = req.body;
+            
+            if (!productId || !quantity || quantity < 1) {
+                return res.status(400).json({ error: 'Product ID and valid quantity required' });
+            }
+            
+            const productResult = await executeQuery(
+                `SELECT price, stock_Quantity, inDeal, deal_price, deal_end 
+                 FROM Product WHERE ProductID = @productId`,
+                [{ name: 'productId', type: sql.Int, value: productId }]
+            );
+            
+            if (productResult.recordset.length === 0) {
+                return res.status(404).json({ error: 'Product not found' });
+            }
+            
+            const product = productResult.recordset[0];
+            if (product.stock_Quantity < quantity) {
+                return res.status(400).json({ error: 'Insufficient stock' });
+            }
+            
+            let cartResult = await executeQuery(
+                `SELECT OrderID FROM Orders WHERE CustomerID = @userId AND status = 'cart'`,
+                [{ name: 'userId', type: sql.Int, value: req.user.id }]
+            );
+            
+            let orderId;
+            if (cartResult.recordset.length === 0) {
+                const insertResult = await executeQuery(
+                    `INSERT INTO Orders(CustomerID, status) VALUES(@userId, 'cart');
+                     SELECT SCOPE_IDENTITY() AS OrderID;`,
+                    [{ name: 'userId', type: sql.Int, value: req.user.id }]
+                );
+                orderId = insertResult.recordset[0].OrderID;
+            } else {
+                orderId = cartResult.recordset[0].OrderID;
+            }
+            
+            let unitPrice = product.price;
+            if (product.inDeal === 1 && product.deal_end && new Date(product.deal_end) > new Date()) {
+                unitPrice = product.deal_price;
+            }
+            
+            const subtotal = unitPrice * quantity;
+            
+            const existingItem = await executeQuery(
+                `SELECT OrderItemID, quantity FROM OrderItem 
+                 WHERE OrderID = @orderId AND ProductID = @productId`,
+                [
+                    { name: 'orderId', type: sql.Int, value: orderId },
+                    { name: 'productId', type: sql.Int, value: productId }
+                ]
+            );
+            
+            if (existingItem.recordset.length > 0) {
+                const newQuantity = existingItem.recordset[0].quantity + quantity;
+                const newSubtotal = unitPrice * newQuantity;
+                await executeQuery(
+                    `UPDATE OrderItem SET quantity = @newQuantity, subtotal = @newSubtotal
+                     WHERE OrderItemID = @itemId`,
+                    [
+                        { name: 'newQuantity', type: sql.Int, value: newQuantity },
+                        { name: 'newSubtotal', type: sql.Decimal(10,2), value: newSubtotal },
+                        { name: 'itemId', type: sql.Int, value: existingItem.recordset[0].OrderItemID }
+                    ]
+                );
+            } else {
+                await executeQuery(
+                    `INSERT INTO OrderItem(OrderID, ProductID, quantity, unit_price, subtotal)
+                     VALUES(@orderId, @productId, @quantity, @unitPrice, @subtotal)`,
+                    [
+                        { name: 'orderId', type: sql.Int, value: orderId },
+                        { name: 'productId', type: sql.Int, value: productId },
+                        { name: 'quantity', type: sql.Int, value: quantity },
+                        { name: 'unitPrice', type: sql.Decimal(10,2), value: unitPrice },
+                        { name: 'subtotal', type: sql.Decimal(10,2), value: subtotal }
+                    ]
+                );
+            }
+            
+            res.json({ success: true, message: 'Item added to cart', productId, quantity });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+    
+    async updateCartItem(req, res) {
+        try {
+            const { itemId } = req.params;
+            const { quantity } = req.body;
+            
+            if (quantity < 1) return res.status(400).json({ error: 'Quantity must be at least 1' });
+            
+            const itemResult = await executeQuery(
+                `SELECT oi.OrderID, oi.ProductID, oi.unit_price, p.stock_Quantity
+                 FROM OrderItem oi JOIN Product p ON oi.ProductID = p.ProductID
+                 WHERE oi.OrderItemID = @itemId`,
+                [{ name: 'itemId', type: sql.Int, value: itemId }]
+            );
+            
+            if (itemResult.recordset.length === 0) return res.status(404).json({ error: 'Cart item not found' });
+            
+            const item = itemResult.recordset[0];
+            if (item.stock_Quantity < quantity) return res.status(400).json({ error: 'Insufficient stock' });
+            
+            const newSubtotal = item.unit_price * quantity;
+            
+            await executeQuery(
+                `UPDATE OrderItem SET quantity = @quantity, subtotal = @newSubtotal WHERE OrderItemID = @itemId`,
+                [
+                    { name: 'quantity', type: sql.Int, value: quantity },
+                    { name: 'newSubtotal', type: sql.Decimal(10,2), value: newSubtotal },
+                    { name: 'itemId', type: sql.Int, value: itemId }
+                ]
+            );
+            res.json({ success: true, message: 'Cart updated successfully' });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+    
+    async removeFromCart(req, res) {
+        try {
+            await executeQuery(`DELETE FROM OrderItem WHERE OrderItemID = @itemId`, [{ name: 'itemId', type: sql.Int, value: req.params.itemId }]);
+            res.json({ success: true, message: 'Item removed from cart' });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+    
+    async clearCart(req, res) {
+        try {
+            const cartResult = await executeQuery(
+                `SELECT OrderID FROM Orders WHERE CustomerID = @userId AND status = 'cart'`,
+                [{ name: 'userId', type: sql.Int, value: req.user.id }]
+            );
+            if (cartResult.recordset.length > 0) {
+                await executeQuery(`DELETE FROM OrderItem WHERE OrderID = @orderId`, [{ name: 'orderId', type: sql.Int, value: cartResult.recordset[0].OrderID }]);
+            }
+            res.json({ success: true, message: 'Cart cleared successfully' });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+};
+
+module.exports = cartController;
