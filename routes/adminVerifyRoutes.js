@@ -6,6 +6,7 @@ const adminVerificationController = require('../controllers/adminVerificationCon
 const { authenticate } = require('../middleware/auth');
 const { isAdmin } = require('../middleware/adminAuth');
 
+
 // User routes
 router.post('/request', authenticate, adminVerificationController.requestAdminAccess);
 router.get('/status', authenticate, adminVerificationController.getVerificationStatus);
@@ -13,5 +14,5 @@ router.get('/status', authenticate, adminVerificationController.getVerificationS
 // Admin only routes
 router.get('/pending', authenticate, isAdmin, adminVerificationController.getPendingRequests);
 router.post('/review', authenticate, isAdmin, adminVerificationController.reviewAdminRequest);
-
+router.post('/approve/:requestId', authenticate, isAdmin, adminVerificationController.approveAdminRequest);
 module.exports = router;

@@ -37,167 +37,173 @@ function logout() {
     window.location.href = 'index.html';
 }
 
-async function loadCart() {
+function formatDate(dateStr) {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString('en-PK', {
+        day: 'numeric', month: 'short', year: 'numeric'
+    });
+}
+
+function statusClass(status) {
+    const map = {
+        pending: 'status-pending',
+        confirmed: 'status-confirmed',
+        shipped: 'status-shipped',
+        delivered: 'status-delivered',
+        cancelled: 'status-cancelled'
+    };
+    return map[status] || 'status-pending';
+}
+
+async function loadOrders() {
     try {
-        const res = await fetch(`${API}/cart`, { headers: authHeaders() });
+        const res = await fetch(`${API}/orders`, { headers: authHeaders() });
         const data = await res.json();
 
-        if (!data.success) {
-            showToast('Failed to load cart', true);
+        const container = document.getElementById('orders-list');
+
+        if (!data.success || data.orders.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-box-open"></i>
+                    <p>You have no orders yet</p>
+                    <a href="customer-dashboard.html" class="shop-btn">
+                        <i class="fas fa-store"></i> Start Shopping
+                    </a>
+                </div>`;
             return;
         }
 
-        renderCart(data.cart);
+        container.innerHTML = data.orders.map(order => `
+            <div class="order-card">
+                <div class="order-header">
+                    <div>
+                        <div class="order-id">Order #${order.OrderID}</div>
+                        <div class="order-date">${formatDate(order.orderDate)}</div>
+                    </div>
+                    <span class="order-status ${statusClass(order.status)}">${order.status}</span>
+                </div>
+                <div class="order-body">
+                    <div class="order-meta">
+                        <span><i class="fas fa-map-marker-alt"></i>${order.delivery_address || '—'}</span>
+                        <span><i class="fas fa-credit-card"></i>${order.payment_method || 'Cash'}</span>
+                    </div>
+                    <div class="order-total">Rs. ${parseFloat(order.total_amount).toFixed(0)}</div>
+                    <div class="order-actions">
+                        <button class="action-btn" onclick="trackOrder(${order.OrderID})">
+                            <i class="fas fa-map-pin"></i> Track
+                        </button>
+                        <button class="action-btn" onclick="viewDetails(${order.OrderID})">
+                            <i class="fas fa-list"></i> Details
+                        </button>
+                    </div>
+                </div>
+            </div>`).join('');
+
     } catch {
-        showToast('Connection error', true);
+        showToast('Failed to load orders', true);
     }
 }
 
-function renderCart(cart) {
-    const items = cart.items || [];
-    document.getElementById('item-count').textContent = items.length;
+async function trackOrder(orderId) {
+    openModal(`Tracking — Order #${orderId}`, '<p style="color:#6c757d">Loading...</p>');
+    try {
+        const res = await fetch(`${API}/orders/${orderId}/track`, { headers: authHeaders() });
+        const data = await res.json();
 
-    const container = document.getElementById('cart-items');
+        if (!data.success) { showToast('Order not found', true); closeModalDirect(); return; }
 
-    if (items.length === 0) {
-        container.innerHTML = `
-            <div class="empty-cart">
-                <i class="fas fa-shopping-cart"></i>
-                <p>Your cart is empty</p>
-                <a href="customer-dashboard.html" class="shop-btn">
-                    <i class="fas fa-store"></i> Start Shopping
-                </a>
+        const order = data.order;
+        const steps = ['pending', 'confirmed', 'shipped', 'delivered'];
+        const currentIndex = steps.indexOf(order.status);
+
+        const stepsHTML = steps.map((step, i) => {
+            const done = i < currentIndex;
+            const current = i === currentIndex;
+            return `
+            <div class="track-step ${done ? 'done' : ''} ${current ? 'current' : ''}">
+                <div class="step-dot">
+                    ${done ? '<i class="fas fa-check"></i>' : (i + 1)}
+                </div>
+                <div class="step-label">${step.charAt(0).toUpperCase() + step.slice(1)}</div>
             </div>`;
-        updateSummary(0);
-        document.getElementById('checkout-btn').disabled = true;
-        return;
-    }
+        }).join('');
 
-    container.innerHTML = items.map(item => `
-        <div class="cart-item" id="item-${item.OrderItemID}">
-            <div class="item-icon"><i class="fas fa-leaf"></i></div>
-            <div class="item-info">
-                <div class="item-name">${item.name}</div>
-                <div class="item-unit">Rs. ${parseFloat(item.unit_price).toFixed(0)} / ${item.unit}</div>
+        document.getElementById('modal-body').innerHTML = `
+            <div style="margin-bottom:1rem">
+                <div style="font-size:0.85rem;color:#6c757d">Ordered on ${formatDate(order.orderDate)}</div>
+                <div style="font-size:0.85rem;color:#6c757d;margin-top:0.3rem">
+                    <i class="fas fa-map-marker-alt" style="color:#2c6e2f"></i> ${order.delivery_address || '—'}
+                </div>
             </div>
-            <div class="qty-controls">
-                <button class="qty-btn" onclick="updateQty(${item.OrderItemID}, ${item.quantity - 1})">
-                    <i class="fas fa-minus"></i>
-                </button>
-                <span class="qty-value">${item.quantity}</span>
-                <button class="qty-btn" onclick="updateQty(${item.OrderItemID}, ${item.quantity + 1})">
-                    <i class="fas fa-plus"></i>
-                </button>
+            <div class="track-steps">${stepsHTML}</div>
+            <div style="font-size:0.85rem;color:#6c757d;border-top:1px solid #f0f0f0;padding-top:0.8rem">
+                Payment: <strong>${order.payment_method || 'Cash'}</strong> —
+                <span style="color:${order.payment_status === 'completed' ? '#2c6e2f' : '#856404'}">
+                    ${order.payment_status || 'pending'}
+                </span>
+            </div>`;
+
+    } catch {
+        showToast('Failed to load tracking', true);
+        closeModalDirect();
+    }
+}
+
+async function viewDetails(orderId) {
+    openModal(`Order #${orderId} — Details`, '<p style="color:#6c757d">Loading...</p>');
+    try {
+        const res = await fetch(`${API}/orders/${orderId}/details`, { headers: authHeaders() });
+        const data = await res.json();
+
+        if (!data.success) { showToast('Order not found', true); closeModalDirect(); return; }
+
+        const { order, items } = data;
+
+        const itemsHTML = items.map(item => `
+            <div class="modal-item">
+                <div>
+                    <div class="modal-item-name">${item.name}</div>
+                    <div class="modal-item-qty">${item.quantity} × Rs. ${parseFloat(item.unit_price).toFixed(0)} / ${item.unit}</div>
+                </div>
+                <div class="modal-item-price">Rs. ${parseFloat(item.subtotal).toFixed(0)}</div>
+            </div>`).join('');
+
+        document.getElementById('modal-body').innerHTML = `
+            <div style="margin-bottom:1rem;font-size:0.85rem;color:#6c757d">
+                <span><i class="fas fa-calendar" style="color:#2c6e2f"></i> ${formatDate(order.orderDate)}</span>
+                &nbsp;&nbsp;
+                <span class="order-status ${statusClass(order.status)}" style="font-size:0.78rem">${order.status}</span>
             </div>
-            <div class="item-price">Rs. ${parseFloat(item.subtotal).toFixed(0)}</div>
-            <button class="remove-btn" onclick="removeItem(${item.OrderItemID})" title="Remove">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>`).join('');
+            ${itemsHTML}
+            <div class="modal-total">
+                <span>Total</span>
+                <span style="color:#2c6e2f">Rs. ${parseFloat(order.total_amount).toFixed(0)}</span>
+            </div>
+            <div style="margin-top:1rem;font-size:0.85rem;color:#6c757d">
+                <i class="fas fa-map-marker-alt" style="color:#2c6e2f"></i> ${order.delivery_address || '—'}
+                &nbsp;&nbsp;
+                <i class="fas fa-credit-card" style="color:#2c6e2f"></i> ${order.payment_method || 'Cash'}
+            </div>`;
 
-    updateSummary(cart.total);
-    document.getElementById('checkout-btn').disabled = false;
-}
-
-function updateSummary(total) {
-    document.getElementById('subtotal').textContent = `Rs. ${parseFloat(total).toFixed(0)}`;
-    document.getElementById('total').textContent = `Rs. ${parseFloat(total).toFixed(0)}`;
-}
-
-async function updateQty(itemId, newQty) {
-    if (newQty < 1) {
-        removeItem(itemId);
-        return;
-    }
-    try {
-        const res = await fetch(`${API}/cart/update/${itemId}`, {
-            method: 'PUT',
-            headers: authHeaders(),
-            body: JSON.stringify({ quantity: newQty })
-        });
-        const data = await res.json();
-        if (data.success) {
-            loadCart();
-        } else {
-            showToast(data.error || 'Could not update quantity', true);
-        }
     } catch {
-        showToast('Connection error', true);
+        showToast('Failed to load details', true);
+        closeModalDirect();
     }
 }
 
-async function removeItem(itemId) {
-    try {
-        const res = await fetch(`${API}/cart/remove/${itemId}`, {
-            method: 'DELETE',
-            headers: authHeaders()
-        });
-        const data = await res.json();
-        if (data.success) {
-            showToast('Item removed');
-            loadCart();
-        } else {
-            showToast('Could not remove item', true);
-        }
-    } catch {
-        showToast('Connection error', true);
-    }
+function openModal(title, bodyHTML) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-body').innerHTML = bodyHTML;
+    document.getElementById('modal-overlay').classList.add('open');
 }
 
-async function clearCart() {
-    if (!confirm('Clear all items from your cart?')) return;
-    try {
-        const res = await fetch(`${API}/cart/clear`, {
-            method: 'DELETE',
-            headers: authHeaders()
-        });
-        const data = await res.json();
-        if (data.success) {
-            showToast('Cart cleared');
-            loadCart();
-        } else {
-            showToast('Could not clear cart', true);
-        }
-    } catch {
-        showToast('Connection error', true);
-    }
+function closeModal(e) {
+    if (e.target === document.getElementById('modal-overlay')) closeModalDirect();
 }
 
-async function checkout() {
-    const address = document.getElementById('delivery-address').value.trim();
-    if (!address) {
-        showToast('Please enter a delivery address', true);
-        document.getElementById('delivery-address').focus();
-        return;
-    }
-
-    const btn = document.getElementById('checkout-btn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Placing Order...';
-
-    try {
-        const res = await fetch(`${API}/orders/checkout`, {
-            method: 'POST',
-            headers: authHeaders(),
-            body: JSON.stringify({ delivery_address: address })
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            showToast('✅ Order placed successfully!');
-            setTimeout(() => {
-                window.location.href = 'orders.html';
-            }, 1500);
-        } else {
-            showToast(data.error || 'Checkout failed', true);
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-credit-card"></i> Proceed to Checkout';
-        }
-    } catch {
-        showToast('Connection error', true);
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-credit-card"></i> Proceed to Checkout';
-    }
+function closeModalDirect() {
+    document.getElementById('modal-overlay').classList.remove('open');
 }
 
-loadCart();
+loadOrders();

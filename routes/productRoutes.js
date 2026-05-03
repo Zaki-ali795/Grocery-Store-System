@@ -8,5 +8,6 @@ router.get('/flash-deals', productController.getFlashDeals);
 router.get('/category/:categoryId', productController.getProductsByCategory);
 router.get('/:id', productController.getProductById);
 router.get('/:id/alternatives', productController.getAlternatives);
+router.post('/', productController.addProduct);
 
 module.exports = router;
