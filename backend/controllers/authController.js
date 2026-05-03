@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const sql = require('mssql');
+const sql = require('mssql/msnodesqlv8');
 const { executeProcedure, executeQuery } = require('../utils/database');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'freshmart-secret-key-2024';
@@ -82,7 +82,83 @@ const authController = {
                 });
             }
 
-            // Get user from database - note role is always 'customer' in DB
+            let user;
+            try {
+                // Call sp_LogIn with just email to get user data
+                const result = await executeProcedure('sp_LogIn', {
+                    email: email
+                });
+                user = result.recordset[0];
+            } catch (procError) {
+                if (procError.message.includes('Email not found')) {
+                    return res.status(401).json({
+                        success: false,
+                        error: 'Invalid email or password'
+                    });
+                }
+                throw procError;
+            }
+
+            // Verify password using bcrypt
+            if (!user || !user.password_hash) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Invalid email or password'
+                });
+            }
+
+            const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+            if (!isPasswordValid) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Invalid email or password'
+                });
+            }
+
+            // Generate JWT token
+            const token = jwt.sign(
+                {
+                    userId: user.UserID,
+                    email: user.email,
+                    name: user.name,
+                    role: user.role || 'customer'
+                },
+                JWT_SECRET,
+                { expiresIn: '24h' }
+            );
+
+            res.json({
+                success: true,
+                message: 'Login successful',
+                token: token,
+                user: {
+                    id: user.UserID,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role || 'customer'
+                }
+            });
+
+        } catch (error) {
+            console.error('Login error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Internal server error'
+            });
+        }
+    },
+    
+    async loginAlternative(req, res) {
+        try {
+            const { email, password, role } = req.body;
+            
+            if (!email || !password) {
+                return res.status(400).json({ 
+                    success: false,
+                    error: 'Please enter both email and password' 
+                });
+            }
+            
             const result = await executeQuery(
                 `SELECT UserID, name, email, password_hash, phone_no, Address, City, 
                         role, admin_approved, approved_at

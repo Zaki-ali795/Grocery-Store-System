@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const sql = require('mssql');
+const sql = require('mssql/msnodesqlv8');
 const { getDb } = require('../utils/database');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'freshmart-secret-key-2024';
