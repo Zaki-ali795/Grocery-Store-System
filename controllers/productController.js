@@ -32,97 +32,63 @@ const productController = {
     },
 
     // ========== ADD NEW PRODUCT (Admin) ==========
-    async addProduct(req, res) {
-        try {
-            const {
-                name,
-                category,
-                price,
-                stock,
-                unit,
-                image,
-                description,
-                inDeal,
-                deal_price,
-                deal_end
-            } = req.body;
-
-            // Validation
-            if (!name || !category || !price || !stock || !unit) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Product name, category, price, stock, and unit are required.'
-                });
-            }
-
-            // Check if category exists or create new one
-            const categoryResult = await executeQuery(
-                `SELECT CategoryID FROM Category WHERE CategoryName = @category`,
-                [{ name: 'category', type: sql.NVarChar, value: category }]
-            );
-
-            let categoryId;
-            if (categoryResult.recordset.length > 0) {
-                categoryId = categoryResult.recordset[0].CategoryID;
-            } else {
-                const insertCategory = await executeQuery(
-                    `INSERT INTO Category (CategoryName, numberOfProduct) 
-                     OUTPUT INSERTED.CategoryID 
-                     VALUES (@category, 0)`,
-                    [{ name: 'category', type: sql.NVarChar, value: category }]
-                );
-                categoryId = insertCategory.recordset[0].CategoryID;
-            }
-
-            // Insert product
-            await executeQuery(
-                `INSERT INTO Product (CategoryID, pName, price, stock_Quantity, product_description, 
-                                      pic_url, unit, inDeal, deal_price, deal_end)
-                 VALUES (@categoryId, @name, @price, @stock, @description, 
-                         @image, @unit, @inDeal, @deal_price, @deal_end)`,
-                [
-                    { name: 'categoryId', type: sql.Int, value: categoryId },
-                    { name: 'name', type: sql.NVarChar, value: name },
-                    { name: 'price', type: sql.Decimal(10, 2), value: price },
-                    { name: 'stock', type: sql.Int, value: stock },
-                    { name: 'description', type: sql.NVarChar, value: description || null },
-                    { name: 'image', type: sql.NVarChar, value: image || null },
-                    { name: 'unit', type: sql.NVarChar, value: unit },
-                    { name: 'inDeal', type: sql.Bit, value: inDeal ? 1 : 0 },
-                    { name: 'deal_price', type: sql.Decimal(10, 2), value: deal_price || null },
-                    { name: 'deal_end', type: sql.DateTime, value: deal_end || null }
-                ]
-            );
-
-            // Update category product count
-            await executeQuery(
-                `UPDATE Category SET numberOfProduct = numberOfProduct + 1 
-                 WHERE CategoryID = @categoryId`,
-                [{ name: 'categoryId', type: sql.Int, value: categoryId }]
-            );
-
-            // Get created product
-            const createdProductResult = await executeQuery(
-                `SELECT ProductID, pName AS name, price, stock_Quantity AS stock, 
-                        unit, pic_url AS image
-                 FROM Product
-                 WHERE ProductID = SCOPE_IDENTITY()`
-            );
-
-            const createdProduct = createdProductResult.recordset[0];
-            res.status(201).json({ 
-                success: true, 
-                product: createdProduct 
-            });
-            
-        } catch (error) {
-            console.error('Add product error:', error);
-            res.status(500).json({
-                success: false,
-                error: error.message
-            });
+// ========== ADD NEW PRODUCT ==========
+// ========== ADD NEW PRODUCT ==========
+async addProduct(req, res) {
+    try {
+        console.log('=== ADD PRODUCT ===');
+        console.log('Request body:', req.body);
+        console.log('User:', req.user);
+        
+        const { categoryId, pName, price, stock_Quantity, unit, product_description, pic_url } = req.body;
+        
+        // Validation
+        if (!categoryId) {
+            return res.status(400).json({ success: false, error: 'Category ID is required' });
         }
-    },
+        if (!pName) {
+            return res.status(400).json({ success: false, error: 'Product name is required' });
+        }
+        if (!price || price <= 0) {
+            return res.status(400).json({ success: false, error: 'Valid price is required' });
+        }
+        if (stock_Quantity === undefined || stock_Quantity < 0) {
+            return res.status(400).json({ success: false, error: 'Valid stock quantity is required' });
+        }
+        if (!unit) {
+            return res.status(400).json({ success: false, error: 'Unit is required' });
+        }
+        
+        // Insert product
+        await executeQuery(
+            `INSERT INTO Product (CategoryID, pName, price, stock_Quantity, unit, product_description, pic_url)
+             VALUES (@catId, @name, @price, @stock, @unit, @desc, @pic)`,
+            [
+                { name: 'catId', type: sql.Int, value: parseInt(categoryId) },
+                { name: 'name', type: sql.NVarChar, value: pName },
+                { name: 'price', type: sql.Decimal(10,2), value: parseFloat(price) },
+                { name: 'stock', type: sql.Int, value: parseInt(stock_Quantity) },
+                { name: 'unit', type: sql.NVarChar, value: unit },
+                { name: 'desc', type: sql.NVarChar, value: product_description || null },
+                { name: 'pic', type: sql.NVarChar, value: pic_url || null }
+            ]
+        );
+        
+        console.log('Product added successfully');
+        
+        res.status(201).json({ 
+            success: true, 
+            message: 'Product added successfully' 
+        });
+        
+    } catch (error) {
+        console.error('Add product error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+},
 
     // ========== GET PRODUCT BY ID ==========
     async getProductById(req, res) {
@@ -505,7 +471,26 @@ const productController = {
                 error: error.message 
             });
         }
+    },// Add this function to your productController.js
+async getCategories(req, res) {
+    try {
+        const result = await executeQuery(
+            `SELECT CategoryID, CategoryName FROM Category ORDER BY CategoryName`,
+            []
+        );
+        
+        res.json({
+            success: true,
+            categories: result.recordset
+        });
+    } catch (error) {
+        console.error('Get categories error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
     }
+}
 };
 
 module.exports = productController;

@@ -7,13 +7,16 @@ const JWT_SECRET = process.env.JWT_SECRET || 'freshmart-secret-key-2024';
 
 const authController = {
 
-    // ========== REGISTER ==========
-    async register(req, res) {
-        try {
+    //REGISTER
+    async register(req, res) 
+    {
+        try 
+        {
             const { name, email, password, phone_no, address, city } = req.body;
             
             // Validation
-            if (!name || !email || !password || !city) {
+            if (!name || !email || !password || !city) 
+                {
                 return res.status(400).json({ 
                     success: false,
                     error: 'Please fill in all required fields' 
@@ -77,7 +80,7 @@ const authController = {
         }
     },
 
-    // ========== LOGIN (Combined - works with both approaches) ==========
+    // LOGIN (Combined - works with both approaches)
     async login(req, res) {
         try {
             const { email, password, role } = req.body;
@@ -111,20 +114,24 @@ const authController = {
                         [{ name: 'email', value: email }]
                     );
                     
-                    if (queryResult.recordset.length === 0) {
+                    if (queryResult.recordset.length === 0) 
+                    {
                         return res.status(401).json({
                             success: false,
                             error: 'Invalid email or password'
                         });
                     }
                     user = queryResult.recordset[0];
-                } else {
+                } 
+                else 
+                {
                     throw procError;
                 }
             }
 
             // Verify password
-            if (!user || !user.password_hash) {
+            if (!user || !user.password_hash) 
+            {
                 return res.status(401).json({
                     success: false,
                     error: 'Invalid email or password'
@@ -132,7 +139,8 @@ const authController = {
             }
 
             const isValidPassword = await bcrypt.compare(password, user.password_hash);
-            if (!isValidPassword) {
+            if (!isValidPassword) 
+            {
                 return res.status(401).json({
                     success: false,
                     error: 'Invalid email or password'
@@ -143,11 +151,15 @@ const authController = {
             let tokenRole = 'customer';
             let isAdminUser = false;
 
-            if (role === 'admin') {
-                if (user.admin_approved === 1) {
+            if (role === 'admin') 
+            {
+                if (user.admin_approved === 1) 
+                {
                     tokenRole = 'admin';
                     isAdminUser = true;
-                } else {
+                } 
+                else 
+                {
                     return res.status(403).json({
                         success: false,
                         error: 'Not authorized as admin. Please request admin access first or your request may be pending.'
@@ -190,7 +202,9 @@ const authController = {
                 }
             });
 
-        } catch (error) {
+        } 
+        catch (error) 
+        {
             console.error('Login error:', error);
             res.status(500).json({
                 success: false,
@@ -199,12 +213,15 @@ const authController = {
         }
     },
 
-    // ========== ALTERNATIVE LOGIN (Legacy support) ==========
-    async loginAlternative(req, res) {
-        try {
+    
+    async loginAlternative(req, res) 
+    {
+        try 
+        {
             const { email, password, role } = req.body;
             
-            if (!email || !password) {
+            if (!email || !password) 
+            {
                 return res.status(400).json({ 
                     success: false,
                     error: 'Please enter both email and password' 
@@ -218,7 +235,8 @@ const authController = {
                 [{ name: 'email', value: email }]
             );
             
-            if (result.recordset.length === 0) {
+            if (result.recordset.length === 0) 
+            {
                 return res.status(401).json({ 
                     success: false,
                     error: 'Invalid email or password' 
@@ -229,7 +247,8 @@ const authController = {
             
             // Verify password
             const isValidPassword = await bcrypt.compare(password, user.password_hash);
-            if (!isValidPassword) {
+            if (!isValidPassword) 
+            {
                 return res.status(401).json({ 
                     success: false,
                     error: 'Invalid email or password' 
@@ -237,8 +256,10 @@ const authController = {
             }
             
             // Check role if specified
-            if (role && role !== user.role && role !== 'customer') {
-                if (role === 'admin' && user.admin_approved !== 1) {
+            if (role && role !== user.role && role !== 'customer') 
+            {
+                if (role === 'admin' && user.admin_approved !== 1) 
+                {
                     return res.status(403).json({ 
                         success: false,
                         error: 'Not authorized as admin. Please request admin access first.' 
@@ -273,7 +294,8 @@ const authController = {
                 }
             });
             
-        } catch (error) {
+        } catch (error) 
+        {
             console.error('Login error:', error);
             res.status(500).json({ 
                 success: false,
@@ -282,7 +304,7 @@ const authController = {
         }
     },
 
-    // ========== GET CURRENT USER ==========
+
     async getCurrentUser(req, res) {
         try {
             const userId = req.user.userId;

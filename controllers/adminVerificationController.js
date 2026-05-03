@@ -3,8 +3,10 @@ const { getDb } = require('../utils/database');
 
 const adminVerificationController = {
     // User requests admin access
-    async requestAdminAccess(req, res) {
-        try {
+    async requestAdminAccess(req, res) 
+    {
+        try 
+        {
             const userId = req.user.userId || req.user.id; // Support both naming conventions
             const { comments } = req.body;
             
@@ -13,9 +15,12 @@ const adminVerificationController = {
             // Check if already admin approved
             const userCheck = await db.request()
                 .input('userId', sql.Int, userId)
-                .query('SELECT admin_approved FROM Users WHERE UserID = @userId');
+                .query(`SELECT admin_approved
+                        FROM Users 
+                        WHERE UserID = @userId`);
             
-            if (userCheck.recordset[0].admin_approved === 1) {
+            if (userCheck.recordset[0].admin_approved === 1) 
+            {
                 return res.status(400).json({ success: false, error: 'You are already an admin' });
             }
             
@@ -27,7 +32,8 @@ const adminVerificationController = {
                     WHERE UserID = @userId AND Status = 'pending'
                 `);
             
-            if (pendingCheck.recordset.length > 0) {
+            if (pendingCheck.recordset.length > 0) 
+            {
                 return res.status(400).json({ success: false, error: 'You already have a pending admin request' });
             }
             
@@ -40,20 +46,25 @@ const adminVerificationController = {
                     VALUES (@userId, @comments, GETDATE(), 'pending')
                 `);
             
-            res.json({ 
+            res.json
+            ({ 
                 success: true, 
                 message: 'Admin access request submitted. You will be notified once reviewed.' 
             });
             
-        } catch (error) {
+        } 
+        catch (error) 
+        {
             console.error(error);
             res.status(500).json({ success: false, error: 'Internal server error' });
         }
     },
     
     // Get user's verification status
-    async getVerificationStatus(req, res) {
-        try {
+    async getVerificationStatus(req, res) 
+    {
+        try 
+        {
             const userId = req.user.userId || req.user.id;
             const db = await getDb();
 
@@ -66,25 +77,30 @@ const adminVerificationController = {
                     ORDER BY RequestDate DESC
                 `);
 
-            if (result.recordset.length === 0) {
+            if (result.recordset.length === 0) 
+            {
                 return res.json({ success: true, status: 'none', request: null });
             }
 
-            res.json({ 
+            res.json
+            ({ 
                 success: true, 
                 status: result.recordset[0].Status, 
                 request: result.recordset[0] 
             });
 
-        } catch (error) {
+        } catch (error) 
+        {
             console.error(error);
             res.status(500).json({ success: false, error: 'Internal server error' });
         }
     },
 
     // Admin: Get all pending requests
-    async getPendingRequests(req, res) {
-        try {
+    async getPendingRequests(req, res) 
+    {
+        try 
+        {
             const db = await getDb();
 
             const result = await db.request()
@@ -133,9 +149,7 @@ const adminVerificationController = {
                 .input('reviewedBy', sql.Int, adminId)
                 .query(`
                     UPDATE AdminVerificationRequests 
-                    SET Status = 'approved', 
-                        ReviewedBy = @reviewedBy, 
-                        ReviewedDate = GETDATE()
+                    SET Status = 'approved',ReviewedBy = @reviewedBy, ReviewedDate = GETDATE()
                     WHERE RequestID = @requestId
                 `);
             
@@ -145,9 +159,7 @@ const adminVerificationController = {
                 .input('approvedBy', sql.Int, adminId)
                 .query(`
                     UPDATE Users 
-                    SET admin_approved = 1, 
-                        approved_by = @approvedBy,
-                        approved_at = GETDATE()
+                    SET admin_approved = 1,approved_by = @approvedBy,approved_at = GETDATE()
                     WHERE UserID = @userId
                 `);
             
@@ -156,19 +168,23 @@ const adminVerificationController = {
                 message: 'Admin request approved successfully' 
             });
             
-        } catch (error) {
+        } catch (error) 
+        {
             console.error(error);
             res.status(500).json({ success: false, error: 'Internal server error' });
         }
     },
 
     // Admin: Review admin request (approve/reject)
-    async reviewAdminRequest(req, res) {
-        try {
+    async reviewAdminRequest(req, res) 
+    {
+        try 
+        {
             const { requestId, action } = req.body;
             const adminId = req.user.userId || req.user.id;
 
-            if (!requestId || !['approved', 'rejected'].includes(action)) {
+            if (!requestId || !['approved', 'rejected'].includes(action)) 
+            {
                 return res.status(400).json({ 
                     success: false, 
                     error: 'requestId and action (approved/rejected) required' 
@@ -181,11 +197,13 @@ const adminVerificationController = {
             const requestResult = await db.request()
                 .input('requestId', sql.Int, requestId)
                 .query(`
-                    SELECT UserID FROM AdminVerificationRequests 
+                    SELECT UserID 
+                    FROM AdminVerificationRequests 
                     WHERE RequestID = @requestId AND Status = 'pending'
                 `);
 
-            if (requestResult.recordset.length === 0) {
+            if (requestResult.recordset.length === 0) 
+            {
                 return res.status(404).json({ 
                     success: false, 
                     error: 'Request not found or already reviewed' 

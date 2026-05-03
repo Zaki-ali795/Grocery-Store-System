@@ -156,3 +156,108 @@ BEGIN
     
     SELECT 'Admin access request submitted successfully' AS Message;
 END
+-------------------------------------------
+-- ============================================
+-- STORED PROCEDURE: sp_AddProduct
+-- ============================================
+go
+CREATE PROCEDURE sp_AddProduct
+    @CategoryID INT,
+    @pName NVARCHAR(150),
+    @price DECIMAL(10,2),
+    @stock_Quantity INT,
+    @product_description NVARCHAR(MAX) = NULL,
+    @pic_url NVARCHAR(500) = NULL,
+    @unit NVARCHAR(50),
+    @inDeal BIT = 0,
+    @deal_price DECIMAL(10,2) = NULL,
+    @deal_end DATETIME = NULL
+AS
+BEGIN
+    BEGIN TRY
+        -- Check if category exists
+        IF NOT EXISTS (SELECT 1 FROM Category WHERE CategoryID = @CategoryID)
+        BEGIN
+            RAISERROR('Category does not exist', 16, 1);
+            RETURN;
+        END
+
+        -- Check if product name already exists in category
+        IF EXISTS (SELECT 1 FROM Product WHERE CategoryID = @CategoryID AND pName = @pName)
+        BEGIN
+            RAISERROR('Product already exists in this category', 16, 1);
+            RETURN;
+        END
+
+        -- Validate deal price if in deal
+        IF @inDeal = 1 AND (@deal_price IS NULL OR @deal_price >= @price)
+        BEGIN
+            RAISERROR('Deal price must be less than original price', 16, 1);
+            RETURN;
+        END
+
+        -- Insert new product
+        INSERT INTO Product (
+            CategoryID, pName, price, stock_Quantity, 
+            product_description, pic_url, unit, 
+            inDeal, deal_price, deal_end
+        )
+        VALUES (
+            @CategoryID, @pName, @price, @stock_Quantity,
+            @product_description, @pic_url, @unit,
+            @inDeal, @deal_price, @deal_end
+        );
+
+        -- Return the new product ID
+        SELECT SCOPE_IDENTITY() AS ProductID, 
+               @pName AS ProductName,
+               'Product added successfully' AS Message;
+
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+        RAISERROR(@ErrorMessage, 16, 1);
+    END CATCH
+END
+Go
+---------------------------------------------------------------
+-- ============================================
+-- STORED PROCEDURE: sp_UpdateProductStock
+-- ============================================
+CREATE PROCEDURE sp_UpdateProductStock
+    @ProductID INT,
+    @stock_Quantity INT
+AS
+BEGIN
+    BEGIN TRY
+        -- Check if product exists
+        IF NOT EXISTS (SELECT 1 FROM Product WHERE ProductID = @ProductID)
+        BEGIN
+            RAISERROR('Product not found', 16, 1);
+            RETURN;
+        END
+
+        -- Validate stock quantity
+        IF @stock_Quantity < 0
+        BEGIN
+            RAISERROR('Stock quantity cannot be negative', 16, 1);
+            RETURN;
+        END
+
+        -- Update stock
+        UPDATE Product 
+        SET stock_Quantity = @stock_Quantity
+        WHERE ProductID = @ProductID;
+
+        -- Return updated product info
+        SELECT ProductID, pName, stock_Quantity 
+        FROM Product 
+        WHERE ProductID = @ProductID;
+
+    END TRY
+    BEGIN CATCH
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+        RAISERROR(@ErrorMessage, 16, 1);
+    END CATCH
+END
+GO

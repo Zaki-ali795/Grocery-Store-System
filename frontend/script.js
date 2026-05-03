@@ -11,7 +11,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Toggle between Login and Registration sections
     mainTabs.forEach(tab => {
-        tab.addEventListener('click', function() {
+        tab.addEventListener('click', function() 
+        {
             const tabName = this.getAttribute('data-tab');
             
             // Update main tabs active state
@@ -227,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // ----- ADMIN LOGIN -----
+    // ----- ADMIN LOGIN (UPDATED) -----
     const adminLogin = document.getElementById('login-admin');
     if (adminLogin) {
         adminLogin.addEventListener('submit', async function(e) {
@@ -243,6 +244,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             try {
+                // ✅ FIXED: Send role as 'admin'
                 const response = await fetch('http://localhost:3000/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -251,15 +253,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 const result = await response.json();
                 
                 if (result.success) {
-                    const adminData = JSON.stringify({ email, role: 'customer', token: result.token });
+                    // Store admin data with token
+                    const adminData = JSON.stringify({ 
+                        email, 
+                        role: 'customer', 
+                        token: result.token,
+                        name: result.name || result.user?.name
+                    });
+                    
                     if (rememberMe) {
                         localStorage.setItem('freshmart_admin', adminData);
+                        localStorage.setItem('token', result.token);
                     } else {
                         sessionStorage.setItem('freshmart_admin', adminData);
+                        sessionStorage.setItem('token', result.token);
                     }
-                    showToast(`🔒 Welcome Admin! Redirecting...`);
+                    
+                    showToast(`🔒 Welcome Admin! Redirecting to Admin Portal...`);
+                    
+                    // ✅ FIXED: Redirect to admin-portal.html
                     setTimeout(() => {
-                        window.location.href = '/frontend/admin-request.html';
+                        window.location.href = 'admin-portal.html';
                     }, 1500);
                 } else {
                     showToast(result.error || 'Invalid admin credentials', true);

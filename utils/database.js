@@ -36,4 +36,4 @@ async function executeProcedure(procedureName, params = {}) {
     return await request.execute(procedureName);
 }
 
-module.exports = { getDb, executeQuery, executeProcedure };
+module.exports = { getDb, executeQuery, executeProcedure, sql };

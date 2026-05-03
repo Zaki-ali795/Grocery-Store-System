@@ -280,7 +280,154 @@ const orderController = {
                 error: error.message 
             });
         }
+    },
+    // Add this function to your existing orderController.js
+// ========== GET ALL ORDERS (ADMIN ONLY) ==========
+async getAllOrders(req, res) {
+    try {
+        const result = await executeQuery(
+            `SELECT o.OrderID, o.total_amount, o.orderDate, o.status, 
+                    o.delivery_address, p.payment_method, p.status as payment_status,
+                    u.name as customer_name, u.email as customer_email
+             FROM Orders o
+             LEFT JOIN Payment p ON o.OrderID = p.order_id
+             LEFT JOIN Users u ON o.CustomerID = u.UserID
+             WHERE o.status != 'cart'
+             ORDER BY o.orderDate DESC`,
+            []
+        );
+        
+        res.json({
+            success: true,
+            orders: result.recordset
+        });
+    } catch (error) {
+        console.error('Get all orders error:', error);
+        res.status(500).json({ 
+            success: false,
+            error: error.message 
+        });
     }
+},
+
+// ========== GET DASHBOARD STATS (ADMIN ONLY) ==========
+async getDashboardStats(req, res) {
+    try {
+        // Total revenue
+        const revenueResult = await executeQuery(
+            `SELECT ISNULL(SUM(total_amount), 0) as total_revenue
+             FROM Orders WHERE status = 'delivered'`,
+            []
+        );
+        
+        // Total orders
+        const ordersResult = await executeQuery(
+            `SELECT COUNT(*) as total_orders FROM Orders WHERE status != 'cart'`,
+            []
+        );
+        
+        // Low stock products (less than 80)
+        const lowStockResult = await executeQuery(
+            `SELECT COUNT(*) as low_stock FROM Product WHERE stock_Quantity < 80`,
+            []
+        );
+        
+        // Pending admin requests
+        const pendingRequestsResult = await executeQuery(
+            `SELECT COUNT(*) as pending_requests 
+             FROM AdminVerificationRequests WHERE Status = 'pending'`,
+            []
+        );
+        
+        // Recent orders (last 5)
+        const recentOrdersResult = await executeQuery(
+            `SELECT TOP 5 o.OrderID, o.total_amount, o.status, o.orderDate,
+                    u.name as customer_name
+             FROM Orders o
+             LEFT JOIN Users u ON o.CustomerID = u.UserID
+             WHERE o.status != 'cart'
+             ORDER BY o.orderDate DESC`,
+            []
+        );
+        
+        res.json({
+            success: true,
+            stats: {
+                totalRevenue: revenueResult.recordset[0]?.total_revenue || 0,
+                totalOrders: ordersResult.recordset[0]?.total_orders || 0,
+                lowStock: lowStockResult.recordset[0]?.low_stock || 0,
+                pendingRequests: pendingRequestsResult.recordset[0]?.pending_requests || 0,
+                recentOrders: recentOrdersResult.recordset
+            }
+        });
+    } catch (error) {
+        console.error('Dashboard stats error:', error);
+        res.status(500).json({ 
+            success: false,
+            error: error.message 
+        });
+    }
+},
+// ========== UPDATE ORDER STATUS (ADMIN ONLY) ==========
+async updateOrderStatus(req, res) {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        
+        console.log(`Updating order ${id} to ${status}`);
+        
+        const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Invalid status' 
+            });
+        }
+        
+        // Check if order exists
+        const orderResult = await executeQuery(
+            `SELECT OrderID FROM Orders WHERE OrderID = @orderId`,
+            [{ name: 'orderId', type: sql.Int, value: id }]
+        );
+        
+        if (orderResult.recordset.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Order not found' 
+            });
+        }
+        
+        // Update order status
+        await executeQuery(
+            `UPDATE Orders SET status = @status WHERE OrderID = @orderId`,
+            [
+                { name: 'status', type: sql.NVarChar, value: status },
+                { name: 'orderId', type: sql.Int, value: id }
+            ]
+        );
+        
+        // If status is delivered, update payment if COD
+        if (status === 'delivered') {
+            await executeQuery(
+                `UPDATE Payment SET status = 'completed', paid_at = GETDATE() 
+                 WHERE order_id = @orderId AND payment_type = 'COD'`,
+                [{ name: 'orderId', type: sql.Int, value: id }]
+            );
+        }
+        
+        res.json({
+            success: true,
+            message: `Order status updated to ${status}`
+        });
+        
+    } catch (error) {
+        console.error('Update order status error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+}
 };
 
 module.exports = orderController;
